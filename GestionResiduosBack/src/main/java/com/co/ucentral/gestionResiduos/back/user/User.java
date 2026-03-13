@@ -17,6 +17,7 @@ public class User {
 
     @Id
     private int id;
+
     private String name;
 
     @Column(name = "last_name")
@@ -25,7 +26,7 @@ public class User {
     private String password;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_role", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "id_role", nullable = false)
     private Role role;
 
     @Column(name = "phone_number")
