@@ -16,7 +16,6 @@ import com.co.ucentral.gestionResiduos.back.role.Role;
 public class User {
 
     @Id
-    // Atributos del usuario
     private int id;
     private String name;
 
@@ -26,7 +25,7 @@ public class User {
     private String password;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "idRole", nullable = false, insertable = false, updatable = false)
+    @JoinColumn(name = "id_role", nullable = false, insertable = false, updatable = false)
     private Role role;
 
     @Column(name = "phone_number")

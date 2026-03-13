@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import com.co.ucentral.gestionResiduos.back.user.User;
 import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import java.sql.Date;
 
 
 @Service
@@ -28,6 +29,9 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setName(request.getName());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setIdRole(1);
+        user.setCreatedAt(new Date(System.currentTimeMillis()));
+        user.setPoints(0);
 
         userRepository.save(user);
 
