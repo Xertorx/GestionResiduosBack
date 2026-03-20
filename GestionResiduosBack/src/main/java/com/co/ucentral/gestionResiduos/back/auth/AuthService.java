@@ -5,15 +5,25 @@ import com.co.ucentral.gestionResiduos.back.exception.EmailAlreadyExistsExceptio
 import com.co.ucentral.gestionResiduos.back.exception.InvalidCredentialsException;
 import com.co.ucentral.gestionResiduos.back.exception.IdAlreadyExistsException;
 import com.co.ucentral.gestionResiduos.back.exception.PhoneAlreadyExistsException;
+import com.co.ucentral.gestionResiduos.back.exception.TokenInvalidoException;
+import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.co.ucentral.gestionResiduos.back.user.User;
 import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.co.ucentral.gestionResiduos.back.security.JwtService;
 import com.co.ucentral.gestionResiduos.back.role.Role;
+import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
+import com.co.ucentral.gestionResiduos.back.token.TokenSecurity;
+import com.co.ucentral.gestionResiduos.back.token.tokenRepository;
+import com.co.ucentral.gestionResiduos.back.util.EmailService;
 import java.sql.Date;
+import java.time.LocalDateTime;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
@@ -23,26 +33,55 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final NeighborhoodRepository neighborhoodRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final tokenRepository tokenRepository;
+    private final EmailService emailService;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
+                       NeighborhoodRepository neighborhoodRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       tokenRepository tokenRepository,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.neighborhoodRepository = neighborhoodRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.tokenRepository = tokenRepository;
+        this.emailService = emailService;
     }
 
-    public AuthResponse register(RegisterRequest request) {
+    @Transactional
+    public RegisterResponse register(RegisterRequest request) {
 
         logger.info("Intentando registrar usuario con email: {}", request.getEmail());
 
         //Validaciones
-        if (userRepository.findById(request.getId()).isPresent()) {
-            logger.warn("ID ya registrado: {}", request.getId());
+        //Si el usuario ya se encuentra registrado pero se encuentra en estado pendiente, reenviar correo de verificación, esto para evitar que el usuario se quede bloqueado
+        // por no recibir el correo o perderlo, se le da la oportunidad de recibir uno nuevo y verificar su cuenta, si el
+        // usuario ya se encuentra registrado pero se encuentra en estado pendiente, se le reenvia el correo de verificación, esto
+        // para evitar que el usuario se quede bloqueado por no recibir el correo o perderlo, se le da la oportunidad de recibir uno nuevo y verificar su cuenta
+        // Caso 1: ID existe y está PENDIENTE → reenviar verificación y redirigir
+        if (userRepository.findById(request.getDocumentNumber()).isPresent()) {
+            User existing = userRepository.findById(request.getDocumentNumber()).get();
+
+            if (existing.getStatus().equals("PENDIENTE")) {
+                resendVerificationEmail(existing.getEmail());
+                logger.info("ID en estado PENDIENTE, reenviando verificación: {}", request.getDocumentNumber());
+
+                // ← devuelve 200 con un mensaje claro en lugar de lanzar excepción
+                return new RegisterResponse(
+                        "PENDIENTE",
+                        existing.getEmail(),
+                        "PENDIENTE"
+                );
+            }
+
+            logger.warn("ID ya registrado: {}", request.getDocumentNumber());
             throw new IdAlreadyExistsException("El ID ya está registrado");
         }
 
@@ -60,33 +99,78 @@ public class AuthService {
 
         Role role =  roleRepository.findByName("CIUDADANO")
                 .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+        
+        Neighborhood neighborhood = neighborhoodRepository.findById(request.getNeighborhoodId())
+                .orElseThrow(() -> new RuntimeException("Barrio no encontrado"));
+        
+        //Creacion de nuevo Usuario con la clase de JPA para ingreso a la BD, se asigna el rol de ciudadano por defecto y el estado de pendiente hasta que se verifique el correo
 
         User user = new User();
-        user.setId(request.getId());
-        user.setName(request.getName());
+        user.setDocumentNumber(request.getDocumentNumber());
+        user.setNames(request.getNames());
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
+        user.setBirthDate(request.getBirthDate());
+        user.setNeighborhoodId(neighborhood);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhoneNumber(request.getPhoneNumber());
         user.setAddress(request.getAddress());
-        user.setCity(request.getCity());
         user.setRole(role);
+        user.setStatus("PENDIENTE");
         user.setCreatedAt(new Date(System.currentTimeMillis()));
-        user.setPoints(0);
-
         userRepository.save(user);
+        /*
+            Json:
+            User {
+                documentNumber: int
+                names: string
+                lastName: string
+                documentType: string
+                email: string
+                birthDate: Date
+                neighborhoodId: int
+                address: string
+                password: string
+                status: string
+                phoneNumber: string
+                roleId: int
+            }
+         */
 
-        String accessToken = jwtService.generateToken(user.getEmail());
-        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+        String token = UUID.randomUUID().toString();
 
-        return new AuthResponse(accessToken, refreshToken);
+        TokenSecurity ts = new TokenSecurity();
+        ts.setUser(user);
+        ts.setToken(token);
+        ts.setExpiredIn(LocalDateTime.now().plusMinutes(15).toString());
+        ts.setUsage(false);
+        tokenRepository.save(ts);
+
+        logger.info("Token de confirmación creado para usuario: {}", user.getEmail());
+
+        // Enviar correo con el link de verificación
+        String link = "http://localhost:4200/register/verify?token=" + token;
+        try {
+            emailService.enviarConfirmacion(user.getEmail(), link);
+            logger.info("Correo de confirmación enviado exitosamente a: {}", user.getEmail());
+        } catch (Exception e) {
+            logger.error("Error al enviar correo de confirmación a: {}, pero el usuario se registró correctamente", user.getEmail(), e);
+            // No lanzamos excepción aquí para no bloquear el registro si falla el email
+        }
+
+        logger.info("Usuario registrado exitosamente. Pendiente de verificación de email: {}", user.getEmail());
+
+        // NO generar tokens en el registro, solo cuando se verifique la cuenta
+        return new RegisterResponse(
+                "Registro exitoso. Por favor verifica tu correo electrónico para activar tu cuenta.",
+                user.getEmail(),
+                "PENDIENTE"
+        );
     }
 
     public AuthResponse login(LoginRequest request) {
-
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new InvalidCredentialsException("Credenciales inválidas"));
-
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Credenciales inválidas");
         }
@@ -94,8 +178,16 @@ public class AuthService {
         String accessToken = jwtService.generateToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
-        return new AuthResponse(accessToken, refreshToken);
+        return new AuthResponse(
+                accessToken,
+                refreshToken,
+                user.getEmail(),
+                user.getNickName(),
+                user.getPhoto(),
+                user.getRole().getName()
+        );
     }
+
 
     public AuthResponse refresh(String refreshToken) {
 
@@ -104,5 +196,124 @@ public class AuthService {
         String newAccessToken = jwtService.generateToken(email);
 
         return new AuthResponse(newAccessToken, refreshToken);
+    }
+
+    public AuthResponse verify(String token) {
+        logger.info("Iniciando verificación de token: {}", token);
+
+        TokenSecurity ts = tokenRepository.findByToken(token)
+                .orElseThrow(() -> {
+                    logger.warn("Token no encontrado: {}", token);
+                    return new TokenInvalidoException("Token no existe");
+                });
+
+        // Validación 1: ¿ya fue usado?
+        if (ts.isUsage()) {
+            logger.warn("Token ya fue utilizado: {}", token);
+            throw new TokenInvalidoException("Este enlace ya fue utilizado.");
+        }
+
+        // Validación 2: ¿expiró?
+        LocalDateTime expiracionTime = LocalDateTime.parse(ts.getExpiredIn());
+        if (expiracionTime.isBefore(LocalDateTime.now())) {
+            logger.warn("Token expirado: {}", token);
+            throw new TokenInvalidoException("El enlace expiró. Solicita uno nuevo.");
+        }
+
+        // Obtener el usuario y activarlo
+        User user = ts.getUser();
+        if (user == null) {
+            logger.error("Usuario no encontrado para token: {}", token);
+            throw new RuntimeException("Usuario no encontrado");
+        }
+
+        user.setStatus("ACTIVO");
+        userRepository.save(user);
+        logger.info("Usuario activado: {}", user.getEmail());
+
+        // Marcar el token como usado
+        ts.setUsage(true);
+        tokenRepository.save(ts);
+        logger.info("Token marcado como usado: {}", token);
+
+        // Generar JWT para que el front inicie sesión directo
+        String accessToken = jwtService.generateToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(accessToken, refreshToken);
+    }
+
+    /**
+
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public RegisterResponse resendVerificationEmail(String email) {
+        logger.info("Resolicitud de verificación para email: {}", email);
+
+        // Verificar que el usuario existe
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> {
+                    logger.warn("Usuario no encontrado para email: {}", email);
+                    return new RuntimeException("Usuario no encontrado");
+                });
+
+        // Si el usuario ya está activo, no necesita verificación
+        if ("ACTIVO".equals(user.getStatus())) {
+            logger.warn("Usuario ya está activo: {}", email);
+            throw new RuntimeException("Tu cuenta ya ha sido verificada. Por favor inicia sesión.");
+        }
+
+        // Eliminar token anterior si existe
+        tokenRepository.deleteByUser(user);
+
+        // Crear nuevo token
+        String newToken = UUID.randomUUID().toString();
+        TokenSecurity ts = new TokenSecurity();
+        ts.setUser(user);
+        ts.setToken(newToken);
+        ts.setExpiredIn(LocalDateTime.now().plusMinutes(15).toString());
+        ts.setUsage(false);
+        tokenRepository.save(ts);
+        logger.info("Correo de verificación reenviado a: {}", ts.getToken());
+
+        logger.info("Nuevo token de verificación creado para: {}", email);
+
+        // Enviar correo con el nuevo link
+        String link = "http://localhost:4200/register/verify?token=" + newToken;
+        try {
+            emailService.enviarConfirmacion(email, link);
+            logger.info("Correo de verificación reenviado a: {}", email);
+        } catch (Exception e) {
+            logger.error("Error al reenviar correo de verificación a: {}", email, e);
+            throw new RuntimeException("Error al reenviar el correo");
+        }
+
+        return new RegisterResponse(
+                "Correo de verificación reenviado exitosamente. Por favor verifica tu correo.",
+                email,
+                "PENDIENTE"
+        );
+    }
+    public RegisterResponse updateProfile(UpdateProfileRequest request) {
+        logger.info("Actualizando perfil -apodo- -foto- para email: {}", request.getEmail());
+
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> {
+                    logger.warn("Usuario no encontrado para email: {}", request.getEmail());
+                    return new RuntimeException("Usuario no encontrado");
+                });
+
+        user.setNickName(request.getNickName());
+        user.setPhoto(request.getPhoto());
+        user.setUpdatedAt(new Date(System.currentTimeMillis()));
+        userRepository.save(user);
+
+        logger.info("Perfil actualizado exitosamente para: {}", request.getEmail());
+
+        return new RegisterResponse(
+                "Perfil actualizado exitosamente.",
+                user.getEmail(),
+                user.getStatus()
+        );
     }
 }

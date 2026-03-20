@@ -2,10 +2,7 @@ package com.co.ucentral.gestionResiduos.back.auth;
 
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -19,11 +16,17 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register/user")
-    public ResponseEntity<AuthResponse> register(
+    public ResponseEntity<RegisterResponse> register(
             @RequestBody @Valid RegisterRequest request) {
 
         return ResponseEntity.ok(authService.register(request));
     }
+
+    @GetMapping("/verify")
+    public ResponseEntity<AuthResponse> verificar(@RequestParam String token) {
+        return ResponseEntity.ok(authService.verify(token));
+    }
+
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
@@ -37,6 +40,21 @@ public class AuthController {
             @RequestBody String refreshToken) {
 
         return ResponseEntity.ok(authService.refresh(refreshToken));
+    }
+
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<RegisterResponse> resendVerification(
+            @RequestBody ResendVerificationRequest request) {
+
+        return ResponseEntity.ok(authService.resendVerificationEmail(request.getEmail()));
+    }
+
+    @PutMapping("/update-profile")
+    public ResponseEntity<RegisterResponse> updateProfile(
+            @RequestBody @Valid UpdateProfileRequest request) {
+
+        return ResponseEntity.ok(authService.updateProfile(request));
     }
 
 }
