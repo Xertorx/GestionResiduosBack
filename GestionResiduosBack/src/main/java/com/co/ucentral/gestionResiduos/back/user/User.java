@@ -2,6 +2,7 @@ package com.co.ucentral.gestionResiduos.back.user;
 
 import java.sql.Date;
 
+import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,36 +13,46 @@ import com.co.ucentral.gestionResiduos.back.role.Role;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "users")
+ @Table(name = "users")
 public class User {
 
     @Id
-    private int id;
+    @Column(name = "documentnumber")
+    private int documentNumber;
 
-    private String name;
-
-    @Column(name = "last_name")
+    @Column(name = "names")
+    private String names;
+    @Column(name = "lastname")
     private String lastName;
+    @Column(name = "nickname")
+    private String nickName;
+    @Column(name = "documenttype")
+    private String documentType;
+    @Column(name = "email")
     private String email;
-    private String password;
-
+    @Column(name = "birthdate")
+    private Date birthDate;
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "id_role", nullable = false)
-    private Role role;
+    @JoinColumn(name = "neighborhoodid", nullable = false)
+    private Neighborhood neighborhoodId;
 
-    @Column(name = "phone_number")
-    private String phoneNumber;
+    @Column(name = "address")
     private String address;
-    private String city;
-    private String state;
-
-    @Column(name = "created_at")
+    @Column(name = "photo")
+    private String photo;
+    @Column(name = "password")
+    private String password;
+    @Column(name = "status")
+    private String status;
+    @Column(name = "phonenumber")
+    private String phoneNumber;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "roleid", nullable = false)
+    private Role role;
+    @Column(name = "createdat")
     private Date createdAt;
-    private long points;
-    
-    @Column(name = "profile_picture_url")
-    private String profilePictureUrl;
-
-
+    @Column(name = "updatedat")
+    private Date updatedAt;
    
 }
+

@@ -4,16 +4,39 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.sql.Date;
 
+/*
+
+Table Usesr {
+  documentNumber int [pk]
+  names varchar
+  lastName varchar
+  documentType varchar
+  email varchar [unique]
+  birthDate date
+  neighborhoodId varchar [ref: > Neighborhood.neighborhoodId]
+  address varchar
+  password varchar
+  status varchar // ACTIVE, INACTIVE
+  roleId int [ref: > Role.roleId]
+  updatedAt datetime
+}
+ */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegisterRequest {
 
-   @NotNull(message = "El ID es obligatorio")
-    private int id;
+   @NotNull(message = "El numero de documento es obligatorio")
+    private int documentNumber;
 
     @NotBlank(message = "El nombre es obligatorio")
-    private String name;
+    private String names;
 
     @NotBlank(message = "El apellido es obligatorio")
     private String lastName;
@@ -22,6 +45,15 @@ public class RegisterRequest {
     @Email(message = "El email debe tener un formato válido")
     private String email;
 
+    @NotNull(message = "La fecha de nacimiento es obligatoria")
+    private Date birthDate;
+
+    @NotNull(message = "El id del barrio es obligatorio")
+    private int neighborhoodId;
+
+    @NotNull(message = "La direccion es obligatoria")
+    private String address;
+
     @NotBlank(message = "La contraseña es obligatoria")
     @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
     private String password;
@@ -29,87 +61,7 @@ public class RegisterRequest {
     @NotBlank(message = "El número de teléfono es obligatorio")
     private String phoneNumber;
 
-    @NotBlank(message = "La dirección es obligatoria")
-    private String address;
-
-    @NotBlank(message = "La ciudad es obligatoria")
-    private String city;
+    private String status;
 
     private Date createdAt;
-    private String profilePictureUrl;
-
-    public int getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public Date getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public String getProfilePictureUrl() {
-        return profilePictureUrl;
-    }
-
-    public void setProfilePictureUrl(String profilePictureUrl) {
-        this.profilePictureUrl = profilePictureUrl;
-    }
 }
