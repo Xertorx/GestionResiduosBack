@@ -53,6 +53,8 @@ public class User {
     private Date createdAt;
     @Column(name = "updatedat")
     private Date updatedAt;
+    @Column(name = "googleid")
+    private String googleId;
    
 }
 

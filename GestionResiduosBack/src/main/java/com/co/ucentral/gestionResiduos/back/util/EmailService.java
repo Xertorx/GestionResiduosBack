@@ -32,4 +32,20 @@ public class EmailService {
             throw new RuntimeException("No se pudo enviar el correo de confirmación", e);
         }
     }
+    public void enviarRecuperacion(String email, String link) {
+        SimpleMailMessage mensaje = new SimpleMailMessage();
+        mensaje.setTo(email);
+        mensaje.setSubject("Recuperación de contraseña - EcoBolivar");
+        mensaje.setText(
+                "Hola,\n\n" +
+                        "Recibimos una solicitud para restablecer tu contraseña.\n\n" +
+                        "Haz clic en el siguiente enlace para crear una nueva contraseña:\n" +
+                        link + "\n\n" +
+                        "Este enlace expirará en 15 minutos.\n\n" +
+                        "Si no solicitaste este cambio, ignora este correo.\n\n" +
+                        "Equipo EcoBolivar"
+        );
+        mailSender.send(mensaje);
+        logger.info("Correo de recuperación enviado a: {}", email);
+    }
 }
