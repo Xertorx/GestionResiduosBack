@@ -1,5 +1,10 @@
 package com.co.ucentral.gestionResiduos.back.auth;
 
+import com.co.ucentral.gestionResiduos.back.auth.login.LoginRequest;
+import com.co.ucentral.gestionResiduos.back.auth.register.GoogleRegisterRequest;
+import com.co.ucentral.gestionResiduos.back.auth.register.RegisterRequest;
+import com.co.ucentral.gestionResiduos.back.auth.register.RegisterResponse;
+import com.co.ucentral.gestionResiduos.back.auth.register.UpdateProfileRequest;
 import com.co.ucentral.gestionResiduos.back.role.RoleRepository;
 import com.co.ucentral.gestionResiduos.back.exception.EmailAlreadyExistsException;
 import com.co.ucentral.gestionResiduos.back.exception.InvalidCredentialsException;
@@ -19,6 +24,7 @@ import com.co.ucentral.gestionResiduos.back.token.tokenRepository;
 import com.co.ucentral.gestionResiduos.back.util.EmailService;
 import java.sql.Date;
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -316,4 +322,148 @@ public class AuthService {
                 user.getStatus()
         );
     }
+
+    @Transactional
+    public AuthResponse registerGoogle(GoogleRegisterRequest request) {
+
+        // Si ya existe → login directo
+        Optional<User> existing = userRepository.findByEmail(request.getEmail());
+        if (existing.isPresent()) {
+            User user = existing.get();
+            if (user.getGoogleId() == null) {
+                user.setGoogleId(request.getGoogleId());
+                userRepository.save(user);
+            }
+
+            String accessToken = jwtService.generateToken(user.getEmail());
+            String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+            return new AuthResponse(
+                    accessToken, refreshToken,
+                    user.getEmail(), user.getNickName(),
+                    user.getPhoto(), user.getRole().getName()
+            );
+        }
+
+        // Si es nuevo → registra como ACTIVO sin verificación
+        Role role = roleRepository.findByName("CIUDADANO")
+                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+
+        Neighborhood neighborhood = neighborhoodRepository.findById(request.getNeighborhoodId())
+                .orElseThrow(() -> new RuntimeException("Barrio no encontrado"));
+
+        User user = new User();
+        user.setNames(request.getNames());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhoto(request.getPhoto());
+        user.setGoogleId(request.getGoogleId()); // ← agrega esto
+        user.setDocumentNumber(request.getDocumentNumber());
+        user.setDocumentType(request.getDocumentType());
+        user.setBirthDate(request.getBirthDate());
+        user.setNeighborhoodId(neighborhood);
+        user.setAddress(request.getAddress());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setRole(role);
+        user.setStatus("ACTIVO");
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setCreatedAt(new Date(System.currentTimeMillis()));
+        userRepository.save(user);
+
+        String accessToken = jwtService.generateToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(
+                accessToken, refreshToken,
+                user.getEmail(), user.getNickName(),
+                user.getPhoto(), user.getRole().getName()
+        );
+    }
+
+    public AuthResponse loginGoogle(String email, String googleId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Verifica que el googleId coincida
+        if (user.getGoogleId() == null || !user.getGoogleId().equals(googleId)) {
+            throw new InvalidCredentialsException("Credenciales inválidas");
+        }
+
+        String accessToken = jwtService.generateToken(user.getEmail());
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        return new AuthResponse(
+                accessToken, refreshToken,
+                user.getEmail(), user.getNickName(),
+                user.getPhoto(), user.getRole().getName()
+        );
+    }
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public RegisterResponse requestPasswordReset(String email) {
+        logger.info("Solicitud de recuperación de contraseña para: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        // Eliminar token anterior si existe
+        tokenRepository.deleteByUser(user);
+
+        // Crear nuevo token
+        String newToken = UUID.randomUUID().toString();
+        TokenSecurity ts = new TokenSecurity();
+        ts.setUser(user);
+        ts.setToken(newToken);
+        ts.setExpiredIn(LocalDateTime.now().plusMinutes(15).toString());
+        ts.setUsage(false);
+        tokenRepository.save(ts);
+
+        // Enviar correo con el link
+        String link = "http://localhost:4200/reset-password?token=" + newToken;
+        try {
+            emailService.enviarRecuperacion(email, link); // ← nuevo método en EmailService
+            logger.info("Correo de recuperación enviado a: {}", email);
+        } catch (Exception e) {
+            logger.error("Error al enviar correo de recuperación a: {}", email, e);
+            throw new RuntimeException("Error al enviar el correo");
+        }
+
+        return new RegisterResponse(
+                "Correo de recuperación enviado. Revisa tu bandeja de entrada.",
+                email,
+                "PENDIENTE"
+        );
+    }
+
+    @Transactional
+    public RegisterResponse resetPassword(String token, String newPassword) {
+        logger.info("Restableciendo contraseña con token: {}", token);
+
+        TokenSecurity ts = tokenRepository.findByToken(token)
+                .orElseThrow(() -> new TokenInvalidoException("Token no existe"));
+
+        if (ts.isUsage()) {
+            throw new TokenInvalidoException("Este enlace ya fue utilizado.");
+        }
+
+        LocalDateTime expiracionTime = LocalDateTime.parse(ts.getExpiredIn());
+        if (expiracionTime.isBefore(LocalDateTime.now())) {
+            throw new TokenInvalidoException("El enlace expiró. Solicita uno nuevo.");
+        }
+
+        User user = ts.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(new Date(System.currentTimeMillis()));
+        userRepository.save(user);
+
+        ts.setUsage(true);
+        tokenRepository.save(ts);
+
+        logger.info("Contraseña restablecida para: {}", user.getEmail());
+
+        return new RegisterResponse(
+                "Contraseña restablecida exitosamente.",
+                user.getEmail(),
+                user.getStatus()
+        );
+    }
+
 }

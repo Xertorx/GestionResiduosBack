@@ -1,4 +1,4 @@
-package com.co.ucentral.gestionResiduos.back.auth;
+package com.co.ucentral.gestionResiduos.back.auth.login;
 
 import jakarta.validation.constraints.NotBlank;
 

@@ -1,11 +1,17 @@
 package com.co.ucentral.gestionResiduos.back.auth;
 
 
+import com.co.ucentral.gestionResiduos.back.auth.login.LoginRequest;
+import com.co.ucentral.gestionResiduos.back.auth.register.*;
+import com.co.ucentral.gestionResiduos.back.auth.resetPassword.PasswordResetConfirmRequest;
+import com.co.ucentral.gestionResiduos.back.auth.resetPassword.PasswordResetRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -56,5 +62,31 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.updateProfile(request));
     }
+    @PostMapping("/register/google")
+    public ResponseEntity<AuthResponse> registerGoogle(
+            @RequestBody GoogleRegisterRequest request) {
+        return ResponseEntity.ok(authService.registerGoogle(request));
+    }
+    @PostMapping("/login/google")
+    public ResponseEntity<AuthResponse> loginGoogle(
+            @RequestBody Map<String, String> request) {
+        return ResponseEntity.ok(authService.loginGoogle(
+                request.get("email"),
+                request.get("googleId")
+        ));
+    }
+    @PostMapping("/forgot-password")
+    public ResponseEntity<RegisterResponse> forgotPassword(
+            @RequestBody PasswordResetRequest request) {
+        return ResponseEntity.ok(authService.requestPasswordReset(request.getEmail()));
+    }
 
+    @PostMapping("/reset-password")
+    public ResponseEntity<RegisterResponse> resetPassword(
+            @RequestBody PasswordResetConfirmRequest request) {
+        return ResponseEntity.ok(authService.resetPassword(
+                request.getToken(),
+                request.getNewPassword()
+        ));
+    }
 }

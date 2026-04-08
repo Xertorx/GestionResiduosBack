@@ -1,4 +1,4 @@
-package com.co.ucentral.gestionResiduos.back.auth;
+package com.co.ucentral.gestionResiduos.back.auth.register;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

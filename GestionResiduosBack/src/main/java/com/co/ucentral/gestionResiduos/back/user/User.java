@@ -36,9 +36,9 @@ public class User {
     @JoinColumn(name = "neighborhoodid", nullable = false)
     private Neighborhood neighborhoodId;
 
-    @Column(name = "address")
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
-    @Column(name = "photo")
+    @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;
     @Column(name = "password")
     private String password;
@@ -53,6 +53,8 @@ public class User {
     private Date createdAt;
     @Column(name = "updatedat")
     private Date updatedAt;
+    @Column(name = "googleid")
+    private String googleId;
    
 }
 
