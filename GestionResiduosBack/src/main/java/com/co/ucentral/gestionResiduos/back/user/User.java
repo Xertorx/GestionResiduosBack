@@ -36,9 +36,9 @@ public class User {
     @JoinColumn(name = "neighborhoodid", nullable = false)
     private Neighborhood neighborhoodId;
 
-    @Column(name = "address")
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
-    @Column(name = "photo")
+    @Column(name = "photo", columnDefinition = "TEXT")
     private String photo;
     @Column(name = "password")
     private String password;
