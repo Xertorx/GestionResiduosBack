@@ -19,7 +19,10 @@ public class ReportMapper {
         ReportDTO dto = new ReportDTO();
         dto.setId(report.getId());
         dto.setType(report.getType());
-        dto.setCategoryId(report.getCategoryId());
+        if (report.getCategory() != null) {
+            dto.setCategoryId(report.getCategory().getId());
+            dto.setCategoryName(report.getCategory().getName());
+        }
         dto.setDescription(report.getDescription());
         dto.setLatitude(report.getLatitude());
         dto.setLongitude(report.getLongitude());

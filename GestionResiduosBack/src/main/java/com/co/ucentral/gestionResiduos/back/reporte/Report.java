@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.reporte;
 
+import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategory;
 import com.co.ucentral.gestionResiduos.back.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -26,9 +27,10 @@ public class Report {
     @NotNull(message = "El tipo de reporte es obligatorio")
     private String type; // punto_critico, incumplimiento_calendario
 
-    @Column(name = "categoria_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "categoria_id", nullable = false)
     @NotNull(message = "La categoría es obligatoria")
-    private Integer categoryId; // FK a tabla de categorías
+    private ReportCategory category;
 
     @Column(name = "descripcion", nullable = false, columnDefinition = "TEXT")
     @NotNull(message = "La descripción es obligatoria")

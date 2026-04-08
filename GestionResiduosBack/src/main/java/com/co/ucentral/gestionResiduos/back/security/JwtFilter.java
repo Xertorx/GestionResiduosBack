@@ -1,25 +1,38 @@
 package com.co.ucentral.gestionResiduos.back.security;
 
+import com.co.ucentral.gestionResiduos.back.exception.JwtAuthenticationException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-    private final JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
-    public JwtFilter(JwtService jwtService) {
+    private final JwtService jwtService;
+    private final ObjectMapper objectMapper;
+
+    public JwtFilter(JwtService jwtService, ObjectMapper objectMapper) {
         this.jwtService = jwtService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -37,17 +50,45 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
 
-        String email = jwtService.extractUsername(token);
+        try {
+            String email = jwtService.extractUsername(token);
 
-        UsernamePasswordAuthenticationToken auth =
-                new UsernamePasswordAuthenticationToken(
-                        email,
-                        null,
-                        Collections.emptyList()
-                );
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UsernamePasswordAuthenticationToken auth =
+                        new UsernamePasswordAuthenticationToken(
+                                email,
+                                null,
+                                Collections.emptyList()
+                        );
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
 
-        SecurityContextHolder.getContext().setAuthentication(auth);
+            filterChain.doFilter(request, response);
 
-        filterChain.doFilter(request, response);
+        } catch (JwtAuthenticationException e) {
+            logger.warn("Error de autenticación JWT en {} {}: {}", request.getMethod(), request.getRequestURI(), e.getMessage());
+            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, e.getMessage(), request.getRequestURI());
+        } catch (Exception e) {
+            logger.error("Error inesperado procesando token JWT: {}", e.getMessage());
+            sendErrorResponse(response, HttpStatus.UNAUTHORIZED, "Error al procesar el token de autenticación", request.getRequestURI());
+        }
+    }
+
+    /**
+     * Envía una respuesta JSON de error directamente desde el filtro.
+     */
+    private void sendErrorResponse(HttpServletResponse response, HttpStatus status, String message, String path) throws IOException {
+        response.setStatus(status.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+        errorResponse.put("status", status.value());
+        errorResponse.put("error", status.getReasonPhrase());
+        errorResponse.put("message", message);
+        errorResponse.put("path", path);
+
+        objectMapper.writeValue(response.getOutputStream(), errorResponse);
     }
 }
