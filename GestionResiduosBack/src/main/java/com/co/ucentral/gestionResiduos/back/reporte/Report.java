@@ -25,7 +25,7 @@ public class Report {
 
     @Column(name = "tipo", nullable = false)
     @NotNull(message = "El tipo de reporte es obligatorio")
-    private String type; // punto_critico, incumplimiento_calendario
+    private String type;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "categoria_id", nullable = false)

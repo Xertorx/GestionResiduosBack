@@ -55,10 +55,8 @@ public class SecurityConfig {
                     // GET Reportes - CON JWT (ver reportes requiere autenticación)
                     .requestMatchers(HttpMethod.GET, "/api/reports/**").authenticated()
 
-                    // GET Categorías activas - SIN JWT (público, para formulario ciudadano)
-                    .requestMatchers(HttpMethod.GET, "/api/report-categories/active").permitAll()
-                    // GET todas las categorías y por ID - CON JWT
-                    .requestMatchers(HttpMethod.GET, "/api/report-categories/**").authenticated()
+                    // GET Categorías (todas, activas, por ID) - SIN JWT (público)
+                    .requestMatchers(HttpMethod.GET, "/api/report-categories/**").permitAll()
                     // POST, PUT, DELETE, PATCH Categorías - CON JWT (admin)
                     .requestMatchers(HttpMethod.POST, "/api/report-categories/**").authenticated()
                     .requestMatchers(HttpMethod.PUT, "/api/report-categories/**").authenticated()
