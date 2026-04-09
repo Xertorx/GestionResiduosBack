@@ -16,6 +16,7 @@ public class ReportDTO {
     private Long id;
     private String type;
     private Integer categoryId;
+    private String categoryName;
     private String description;
     private Double latitude;
     private Double longitude;

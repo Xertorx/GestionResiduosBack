@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.util;
 
+import com.co.ucentral.gestionResiduos.back.exception.EmailSendException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -29,7 +30,7 @@ public class EmailService {
             logger.info("Correo de confirmación enviado a: {}", destinatario);
         } catch (Exception e) {
             logger.error("Error al enviar correo de confirmación a: {}", destinatario, e);
-            throw new RuntimeException("No se pudo enviar el correo de confirmación", e);
+            throw new EmailSendException("No se pudo enviar el correo de confirmación", e);
         }
     }
     public void enviarRecuperacion(String email, String link) {

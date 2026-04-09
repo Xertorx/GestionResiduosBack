@@ -1,5 +1,8 @@
 package com.co.ucentral.gestionResiduos.back.reporte;
 
+import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategory;
+import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategoryRepository;
+import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
 import com.co.ucentral.gestionResiduos.back.user.User;
 import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final ReportMapper reportMapper;
     private final UserRepository userRepository;
+    private final ReportCategoryRepository categoryRepository;
 
     @Value("${app.upload.dir:./uploads/reports}")
     private String uploadDir;
@@ -41,7 +45,7 @@ public class ReportService {
 
         // 1. Obtener usuario autenticado por email (del JWT)
         User user = userRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado con email: " + emailUsuario));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + emailUsuario));
 
         // 2. Validaciones básicas
         if (dto.getType() == null || (!dto.getType().equals("punto_critico") && !dto.getType().equals("incumplimiento_calendario"))) {
@@ -61,10 +65,18 @@ public class ReportService {
             imageUrl = saveImage(dto.getImage());
         }
 
-        // 5. Crear entidad Report
+        // 5. Buscar categoría
+        ReportCategory category = categoryRepository.findById(dto.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada con ID: " + dto.getCategoryId()));
+
+        if (!"ACTIVO".equals(category.getStatus())) {
+            throw new IllegalArgumentException("La categoría seleccionada está inactiva");
+        }
+
+        // 6. Crear entidad Report
         Report report = new Report();
         report.setType(dto.getType());
-        report.setCategoryId(dto.getCategoryId());
+        report.setCategory(category);
         report.setDescription(dto.getDescription());
         report.setLatitude(dto.getLatitude());
         report.setLongitude(dto.getLongitude());
@@ -73,11 +85,11 @@ public class ReportService {
         report.setUser(user);
         report.setStatus("pendiente");
 
-        // 6. Guardar reporte
+        // 7. Guardar reporte
         Report reportSaved = reportRepository.save(report);
         log.info("Reporte creado exitosamente. ID: {}", reportSaved.getId());
 
-        // 7. Convertir a DTO y retornar
+        // 8. Convertir a DTO y retornar
         return reportMapper.toDTO(reportSaved);
     }
 
@@ -130,7 +142,7 @@ public class ReportService {
             return "/uploads/reports/" + fileName;
         } catch (IOException e) {
             log.error("Error al guardar imagen: ", e);
-            throw new RuntimeException("Error al procesar la imagen", e);
+            throw new IllegalStateException("Error al procesar la imagen. Intenta nuevamente.", e);
         }
     }
 
@@ -150,8 +162,8 @@ public class ReportService {
     public List<ReportDTO> getMyReports(String emailUsuario) {
         // Obtener usuario por email del JWT
         User user = userRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + emailUsuario));
+
         return reportRepository.findByUserDocumentNumber(user.getDocumentNumber())
                 .stream()
                 .map(reportMapper::toDTO)
@@ -164,7 +176,7 @@ public class ReportService {
     public ReportDTO getReportById(Long id) {
         return reportRepository.findById(id)
                 .map(reportMapper::toDTO)
-                .orElseThrow(() -> new IllegalArgumentException("Reporte no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con ID: " + id));
     }
 
     /**
@@ -182,7 +194,7 @@ public class ReportService {
      */
     public ReportDTO changeStatus(Long id, String newStatus) {
         Report report = reportRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Reporte no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Reporte no encontrado con ID: " + id));
 
         if (!isValidStatus(newStatus)) {
             throw new IllegalArgumentException("Estado inválido. Debe ser: pendiente, en_revision, resuelto, rechazado");

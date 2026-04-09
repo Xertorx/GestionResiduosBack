@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.ecoPoint;
 
+import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -7,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/ecopoints")
@@ -39,9 +39,9 @@ public class EcoPointController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<EcoPoint> getEcoPointById(@PathVariable Long id) {
-        Optional<EcoPoint> ecoPoint = ecoPointService.getEcoPointById(id);
-        return ecoPoint.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        EcoPoint ecoPoint = ecoPointService.getEcoPointById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Eco punto no encontrado con ID: " + id));
+        return ResponseEntity.ok(ecoPoint);
     }
 
     /**
@@ -118,9 +118,9 @@ public class EcoPointController {
     public ResponseEntity<EcoPoint> updateEcoPoint(
             @PathVariable Long id,
             @Valid @RequestBody EcoPoint ecoPointDetails) {
-        Optional<EcoPoint> updatedEcoPoint = ecoPointService.updateEcoPoint(id, ecoPointDetails);
-        return updatedEcoPoint.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        EcoPoint updatedEcoPoint = ecoPointService.updateEcoPoint(id, ecoPointDetails)
+                .orElseThrow(() -> new ResourceNotFoundException("Eco punto no encontrado con ID: " + id));
+        return ResponseEntity.ok(updatedEcoPoint);
     }
 
     /**
@@ -130,9 +130,9 @@ public class EcoPointController {
     public ResponseEntity<EcoPoint> changeEcoPointStatus(
             @PathVariable Long id,
             @RequestParam String status) {
-        Optional<EcoPoint> updatedEcoPoint = ecoPointService.changeEcoPointStatus(id, status);
-        return updatedEcoPoint.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+        EcoPoint updatedEcoPoint = ecoPointService.changeEcoPointStatus(id, status)
+                .orElseThrow(() -> new ResourceNotFoundException("Eco punto no encontrado con ID: " + id));
+        return ResponseEntity.ok(updatedEcoPoint);
     }
 
     /**
@@ -141,10 +141,10 @@ public class EcoPointController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEcoPoint(@PathVariable Long id) {
         boolean deleted = ecoPointService.deleteEcoPoint(id);
-        if (deleted) {
-            return ResponseEntity.noContent().build();
+        if (!deleted) {
+            throw new ResourceNotFoundException("Eco punto no encontrado con ID: " + id);
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        return ResponseEntity.noContent().build();
     }
 
 }

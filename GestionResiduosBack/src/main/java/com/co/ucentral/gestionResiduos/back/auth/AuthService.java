@@ -7,10 +7,14 @@ import com.co.ucentral.gestionResiduos.back.auth.register.RegisterResponse;
 import com.co.ucentral.gestionResiduos.back.auth.register.UpdateProfileRequest;
 import com.co.ucentral.gestionResiduos.back.role.RoleRepository;
 import com.co.ucentral.gestionResiduos.back.exception.EmailAlreadyExistsException;
+import com.co.ucentral.gestionResiduos.back.exception.EmailSendException;
 import com.co.ucentral.gestionResiduos.back.exception.InvalidCredentialsException;
 import com.co.ucentral.gestionResiduos.back.exception.IdAlreadyExistsException;
+import com.co.ucentral.gestionResiduos.back.exception.JwtAuthenticationException;
 import com.co.ucentral.gestionResiduos.back.exception.PhoneAlreadyExistsException;
+import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
 import com.co.ucentral.gestionResiduos.back.exception.TokenInvalidoException;
+import com.co.ucentral.gestionResiduos.back.exception.UserNotVerifiedException;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -104,11 +108,11 @@ public class AuthService {
         logger.info("Validaciones pasadas, procediendo con registro. Total usuarios en BD: {}", userRepository.count());
 
         Role role =  roleRepository.findByName("CIUDADANO")
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Rol CIUDADANO no encontrado. Contacte al administrador."));
+
         Neighborhood neighborhood = neighborhoodRepository.findById(request.getNeighborhoodId())
-                .orElseThrow(() -> new RuntimeException("Barrio no encontrado"));
-        
+                .orElseThrow(() -> new ResourceNotFoundException("Barrio no encontrado con ID: " + request.getNeighborhoodId()));
+
         //Creacion de nuevo Usuario con la clase de JPA para ingreso a la BD, se asigna el rol de ciudadano por defecto y el estado de pendiente hasta que se verifique el correo
 
         User user = new User();
@@ -196,12 +200,20 @@ public class AuthService {
 
 
     public AuthResponse refresh(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new JwtAuthenticationException("El refresh token es requerido");
+        }
 
-        String email = jwtService.extractUsername(refreshToken);
+        // extractUsername lanzará JwtAuthenticationException si el token es inválido/expirado
+        String email = jwtService.extractUsername(refreshToken.trim());
+
+        // Verificar que el usuario existe
+        userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el email del token"));
 
         String newAccessToken = jwtService.generateToken(email);
 
-        return new AuthResponse(newAccessToken, refreshToken);
+        return new AuthResponse(newAccessToken, refreshToken.trim());
     }
 
     public AuthResponse verify(String token) {
@@ -230,7 +242,7 @@ public class AuthService {
         User user = ts.getUser();
         if (user == null) {
             logger.error("Usuario no encontrado para token: {}", token);
-            throw new RuntimeException("Usuario no encontrado");
+            throw new ResourceNotFoundException("Usuario no encontrado para el token proporcionado");
         }
 
         user.setStatus("ACTIVO");
@@ -260,13 +272,13 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     logger.warn("Usuario no encontrado para email: {}", email);
-                    return new RuntimeException("Usuario no encontrado");
+                    return new ResourceNotFoundException("Usuario no encontrado con el email: " + email);
                 });
 
         // Si el usuario ya está activo, no necesita verificación
         if ("ACTIVO".equals(user.getStatus())) {
             logger.warn("Usuario ya está activo: {}", email);
-            throw new RuntimeException("Tu cuenta ya ha sido verificada. Por favor inicia sesión.");
+            throw new UserNotVerifiedException("Tu cuenta ya ha sido verificada. Por favor inicia sesión.");
         }
 
         // Eliminar token anterior si existe
@@ -291,7 +303,7 @@ public class AuthService {
             logger.info("Correo de verificación reenviado a: {}", email);
         } catch (Exception e) {
             logger.error("Error al reenviar correo de verificación a: {}", email, e);
-            throw new RuntimeException("Error al reenviar el correo");
+            throw new EmailSendException("Error al reenviar el correo de verificación. Intenta nuevamente.");
         }
 
         return new RegisterResponse(
@@ -306,7 +318,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> {
                     logger.warn("Usuario no encontrado para email: {}", request.getEmail());
-                    return new RuntimeException("Usuario no encontrado");
+                    return new ResourceNotFoundException("Usuario no encontrado con el email: " + request.getEmail());
                 });
 
         user.setNickName(request.getNickName());
@@ -346,10 +358,10 @@ public class AuthService {
 
         // Si es nuevo → registra como ACTIVO sin verificación
         Role role = roleRepository.findByName("CIUDADANO")
-                .orElseThrow(() -> new RuntimeException("Rol no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Rol CIUDADANO no encontrado. Contacte al administrador."));
 
         Neighborhood neighborhood = neighborhoodRepository.findById(request.getNeighborhoodId())
-                .orElseThrow(() -> new RuntimeException("Barrio no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Barrio no encontrado con ID: " + request.getNeighborhoodId()));
 
         User user = new User();
         user.setNames(request.getNames());
@@ -381,7 +393,7 @@ public class AuthService {
 
     public AuthResponse loginGoogle(String email, String googleId) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el email: " + email));
 
         // Verifica que el googleId coincida
         if (user.getGoogleId() == null || !user.getGoogleId().equals(googleId)) {
@@ -402,7 +414,7 @@ public class AuthService {
         logger.info("Solicitud de recuperación de contraseña para: {}", email);
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con el email: " + email));
 
         // Eliminar token anterior si existe
         tokenRepository.deleteByUser(user);
@@ -423,7 +435,7 @@ public class AuthService {
             logger.info("Correo de recuperación enviado a: {}", email);
         } catch (Exception e) {
             logger.error("Error al enviar correo de recuperación a: {}", email, e);
-            throw new RuntimeException("Error al enviar el correo");
+            throw new EmailSendException("Error al enviar el correo de recuperación. Intenta nuevamente.");
         }
 
         return new RegisterResponse(

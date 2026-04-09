@@ -1,9 +1,16 @@
 package com.co.ucentral.gestionResiduos.back.security;
 
+import com.co.ucentral.gestionResiduos.back.exception.JwtAuthenticationException;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -11,6 +18,8 @@ import java.util.Date;
 
 @Service
 public class JwtService {
+
+    private static final Logger logger = LoggerFactory.getLogger(JwtService.class);
 
     private final SecretKey key;
     private final long jwtExpiration;
@@ -29,7 +38,6 @@ public class JwtService {
     }
 
     public String generateToken(String email) {
-
         return Jwts.builder()
                 .setSubject(email)
                 .setIssuedAt(new Date())
@@ -39,7 +47,6 @@ public class JwtService {
     }
 
     public String generateRefreshToken(String email) {
-
         return Jwts.builder()
                 .setSubject(email)
                 .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
@@ -47,12 +54,45 @@ public class JwtService {
                 .compact();
     }
 
+    /**
+     * Extrae el email (subject) del token JWT.
+     * Lanza JwtAuthenticationException con mensajes claros según el tipo de error.
+     */
     public String extractUsername(String token) {
-        return Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
+        try {
+            return Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload()
+                    .getSubject();
+        } catch (ExpiredJwtException e) {
+            logger.warn("Token JWT expirado: {}", e.getMessage());
+            throw new JwtAuthenticationException("El token ha expirado. Por favor inicia sesión nuevamente.", e);
+        } catch (MalformedJwtException e) {
+            logger.warn("Token JWT malformado: {}", e.getMessage());
+            throw new JwtAuthenticationException("Token malformado. Por favor inicia sesión nuevamente.", e);
+        } catch (SignatureException e) {
+            logger.warn("Firma de token JWT inválida: {}", e.getMessage());
+            throw new JwtAuthenticationException("Token con firma inválida. Por favor inicia sesión nuevamente.", e);
+        } catch (JwtException e) {
+            logger.warn("Error de validación JWT: {}", e.getMessage());
+            throw new JwtAuthenticationException("Token inválido. Por favor inicia sesión nuevamente.", e);
+        }
+    }
+
+    /**
+     * Valida si un token es válido (no expirado, firma correcta, bien formado).
+     */
+    public boolean isTokenValid(String token) {
+        try {
+            Jwts.parser()
+                    .verifyWith(key)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }

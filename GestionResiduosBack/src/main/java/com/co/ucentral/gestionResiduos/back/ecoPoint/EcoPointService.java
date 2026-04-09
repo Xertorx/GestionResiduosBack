@@ -2,6 +2,7 @@ package com.co.ucentral.gestionResiduos.back.ecoPoint;
 
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
+import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.sql.Date;
@@ -94,7 +95,7 @@ public class EcoPointService {
         
         // Buscar el neighborhood en la BD
         Neighborhood neighborhood = neighborhoodRepository.findById(ecoPoint.getNeighborhood().neighborhoodId)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "El barrio con ID " + ecoPoint.getNeighborhood().neighborhoodId + " no existe"));
         
         // Asignar el neighborhood persistido
@@ -136,7 +137,7 @@ public class EcoPointService {
             if (ecoPointDetails.getNeighborhood() != null) {
                 // Validar que el neighborhood existe
                 Neighborhood neighborhood = neighborhoodRepository.findById(ecoPointDetails.getNeighborhood().neighborhoodId)
-                        .orElseThrow(() -> new IllegalArgumentException(
+                        .orElseThrow(() -> new ResourceNotFoundException(
                                 "El barrio con ID " + ecoPointDetails.getNeighborhood().neighborhoodId + " no existe"));
                 ecoPoint.setNeighborhood(neighborhood);
             }
