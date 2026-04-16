@@ -61,4 +61,14 @@ public class EducationContentService {
     public List<EducationContent> getAllContents() {
         return repository.findAll();
     }
+    public java.util.Optional<EducationContent> getContentById(Long id) {
+        return repository.findById(id);
+    }
+
+    public void deleteContent(Long id) {
+        if (!repository.existsById(id)) {
+            throw new RuntimeException("Contenido no encontrado con id: " + id);
+        }
+        repository.deleteById(id);
+    }
 }
