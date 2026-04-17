@@ -68,7 +68,7 @@ public class SecurityConfig {
 
                     // Usuarios - CON JWT (perfil propio)
                     .requestMatchers("/api/users/**").authenticated()
-
+                    .requestMatchers("/uploads/**").permitAll()
                     // GET Calendarios por localidad - SIN JWT (público)
                     .requestMatchers(HttpMethod.GET, "/api/schedules/district/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/schedules/{id}").permitAll()

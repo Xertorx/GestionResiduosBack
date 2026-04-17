@@ -9,13 +9,10 @@ public class StaticResourceConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Servir fotos de perfil
-        registry.addResourceHandler("/uploads/photo_profile/**")
-                .addResourceLocations("file:uploads/photo_profile/");
+        // Ruta absoluta al directorio del proyecto
+        String uploadPath = System.getProperty("user.dir") + "/uploads/";
 
-        // Servir imágenes de reportes
-        registry.addResourceHandler("/uploads/reports/**")
-                .addResourceLocations("file:uploads/reports/");
+        registry.addResourceHandler("/uploads/**")
+                .addResourceLocations("file:" + uploadPath);
     }
 }
-
