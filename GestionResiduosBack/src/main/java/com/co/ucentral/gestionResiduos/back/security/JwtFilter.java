@@ -1,6 +1,7 @@
 package com.co.ucentral.gestionResiduos.back.security;
 
 import com.co.ucentral.gestionResiduos.back.exception.JwtAuthenticationException;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -20,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -29,10 +32,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
-    public JwtFilter(JwtService jwtService, ObjectMapper objectMapper) {
+    public JwtFilter(JwtService jwtService, ObjectMapper objectMapper, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.objectMapper = objectMapper;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -54,11 +59,21 @@ public class JwtFilter extends OncePerRequestFilter {
             String email = jwtService.extractUsername(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // Cargar rol del usuario para authorities
+                List<SimpleGrantedAuthority> authorities = userRepository.findByEmail(email)
+                        .map(user -> {
+                            if (user.getRole() != null) {
+                                return List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()));
+                            }
+                            return List.<SimpleGrantedAuthority>of();
+                        })
+                        .orElse(Collections.emptyList());
+
                 UsernamePasswordAuthenticationToken auth =
                         new UsernamePasswordAuthenticationToken(
                                 email,
                                 null,
-                                Collections.emptyList()
+                                authorities
                         );
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }

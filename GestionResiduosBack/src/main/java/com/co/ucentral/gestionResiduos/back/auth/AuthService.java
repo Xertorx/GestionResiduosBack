@@ -27,19 +27,28 @@ import com.co.ucentral.gestionResiduos.back.token.TokenSecurity;
 import com.co.ucentral.gestionResiduos.back.token.tokenRepository;
 import com.co.ucentral.gestionResiduos.back.util.EmailService;
 import java.sql.Date;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 
 @Service
 public class AuthService {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthService.class);
+
+    @Value("${app.upload.dir.photo-profile:uploads/photo_profile}")
+    private String photoProfileDir;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -161,7 +170,7 @@ public class AuthService {
         // Enviar correo con el link de verificación
         String link = "http://localhost:4200/register/verify?token=" + token;
         try {
-            emailService.enviarConfirmacion(user.getEmail(), link);
+            emailService.enviarConfirmacion(user.getEmail(), user.getNames(), link);
             logger.info("Correo de confirmación enviado exitosamente a: {}", user.getEmail());
         } catch (Exception e) {
             logger.error("Error al enviar correo de confirmación a: {}, pero el usuario se registró correctamente", user.getEmail(), e);
@@ -299,7 +308,7 @@ public class AuthService {
         // Enviar correo con el nuevo link
         String link = "http://localhost:4200/register/verify?token=" + newToken;
         try {
-            emailService.enviarConfirmacion(email, link);
+            emailService.enviarConfirmacion(email, user.getNames(), link);
             logger.info("Correo de verificación reenviado a: {}", email);
         } catch (Exception e) {
             logger.error("Error al reenviar correo de verificación a: {}", email, e);
@@ -312,7 +321,7 @@ public class AuthService {
                 "PENDIENTE"
         );
     }
-    public RegisterResponse updateProfile(UpdateProfileRequest request) {
+    public RegisterResponse updateProfile(UpdateProfileRequest request, MultipartFile photo) {
         logger.info("Actualizando perfil -apodo- -foto- para email: {}", request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
@@ -322,7 +331,13 @@ public class AuthService {
                 });
 
         user.setNickName(request.getNickName());
-        user.setPhoto(request.getPhoto());
+
+        // Guardar foto como archivo si se envió
+        if (photo != null && !photo.isEmpty()) {
+            String photoPath = saveProfilePhoto(photo);
+            user.setPhoto(photoPath);
+        }
+
         user.setUpdatedAt(new Date(System.currentTimeMillis()));
         userRepository.save(user);
 
@@ -333,6 +348,30 @@ public class AuthService {
                 user.getEmail(),
                 user.getStatus()
         );
+    }
+
+    /**
+     * Guardar foto de perfil en carpeta photo_profile
+     */
+    private String saveProfilePhoto(MultipartFile photo) {
+        try {
+            if (photo.getContentType() == null || !photo.getContentType().startsWith("image/")) {
+                throw new IllegalArgumentException("El archivo debe ser una imagen");
+            }
+
+            Path uploadPath = Paths.get(photoProfileDir);
+            Files.createDirectories(uploadPath);
+
+            String fileName = UUID.randomUUID() + "_" + photo.getOriginalFilename();
+            Path filePath = uploadPath.resolve(fileName);
+            Files.copy(photo.getInputStream(), filePath);
+
+            logger.info("Foto de perfil guardada: {}", fileName);
+            return "/uploads/photo_profile/" + fileName;
+        } catch (IOException e) {
+            logger.error("Error al guardar foto de perfil: ", e);
+            throw new IllegalStateException("Error al procesar la imagen. Intenta nuevamente.", e);
+        }
     }
 
     @Transactional
@@ -431,7 +470,7 @@ public class AuthService {
         // Enviar correo con el link
         String link = "http://localhost:4200/reset-password?token=" + newToken;
         try {
-            emailService.enviarRecuperacion(email, link); // ← nuevo método en EmailService
+            emailService.enviarRecuperacion(email, user.getNames(), link); // ← ahora pasa el nombre
             logger.info("Correo de recuperación enviado a: {}", email);
         } catch (Exception e) {
             logger.error("Error al enviar correo de recuperación a: {}", email, e);

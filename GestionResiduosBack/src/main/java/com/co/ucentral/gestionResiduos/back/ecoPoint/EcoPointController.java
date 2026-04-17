@@ -5,6 +5,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -103,18 +104,20 @@ public class EcoPointController {
     }
 
     /**
-     * Crear un nuevo eco punto
+     * Crear un nuevo eco punto (solo admin)
      */
     @PostMapping
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EcoPoint> createEcoPoint(@Valid @RequestBody EcoPoint ecoPoint) {
         EcoPoint createdEcoPoint = ecoPointService.createEcoPoint(ecoPoint);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdEcoPoint);
     }
 
     /**
-     * Actualizar un eco punto existente
+     * Actualizar un eco punto existente (solo admin)
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EcoPoint> updateEcoPoint(
             @PathVariable Long id,
             @Valid @RequestBody EcoPoint ecoPointDetails) {
@@ -124,9 +127,10 @@ public class EcoPointController {
     }
 
     /**
-     * Cambiar estado de un eco punto
+     * Cambiar estado de un eco punto (solo admin)
      */
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EcoPoint> changeEcoPointStatus(
             @PathVariable Long id,
             @RequestParam String status) {
@@ -136,9 +140,10 @@ public class EcoPointController {
     }
 
     /**
-     * Eliminar un eco punto
+     * Eliminar un eco punto (solo admin)
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> deleteEcoPoint(@PathVariable Long id) {
         boolean deleted = ecoPointService.deleteEcoPoint(id);
         if (!deleted) {

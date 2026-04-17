@@ -17,7 +17,4 @@ public class UpdateProfileRequest {
 
     @NotBlank(message = "El apodo es obligatorio")
     private String nickName;
-
-    @NotBlank(message = "La foto es obligatoria")
-    private String photo;
 }

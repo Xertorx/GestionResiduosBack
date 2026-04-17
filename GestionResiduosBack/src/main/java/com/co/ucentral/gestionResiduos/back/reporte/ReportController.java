@@ -2,12 +2,14 @@ package com.co.ucentral.gestionResiduos.back.reporte;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.Date;
 import java.util.List;
 
 /**
@@ -120,6 +122,24 @@ public class ReportController {
         
         ReportDTO report = reportService.changeStatus(id, newStatus);
         return ResponseEntity.ok(report);
+    }
+
+    /**
+     * Búsqueda de reportes con filtros combinados y paginación.
+     * Todos los filtros son opcionales.
+     * GET /api/reports/search?status=pendiente&type=punto_critico&dateFrom=2026-01-01&dateTo=2026-12-31&categoryId=1&page=0&size=10
+     */
+    @GetMapping("/search")
+    public ResponseEntity<Page<ReportDTO>> searchReports(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Date dateFrom,
+            @RequestParam(required = false) Date dateTo,
+            @RequestParam(required = false) Integer categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<ReportDTO> reports = reportService.searchReports(status, type, dateFrom, dateTo, categoryId, page, size);
+        return ResponseEntity.ok(reports);
     }
 
     /**

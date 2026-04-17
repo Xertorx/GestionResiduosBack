@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,10 +34,14 @@ public class EcoPoint {
 
     @Column(name = "latitude", nullable = false)
     @NotNull(message = "La latitud es obligatoria")
+    @DecimalMin(value = "-90.0", message = "La latitud debe ser mayor o igual a -90")
+    @DecimalMax(value = "90.0", message = "La latitud debe ser menor o igual a 90")
     private Double latitude;
 
     @Column(name = "longitude", nullable = false)
     @NotNull(message = "La longitud es obligatoria")
+    @DecimalMin(value = "-180.0", message = "La longitud debe ser mayor o igual a -180")
+    @DecimalMax(value = "180.0", message = "La longitud debe ser menor o igual a 180")
     private Double longitude;
 
     @Column(name = "description")
