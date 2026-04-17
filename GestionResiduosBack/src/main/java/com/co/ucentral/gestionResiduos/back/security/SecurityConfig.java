@@ -63,6 +63,8 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/report-categories/**").authenticated()
                     .requestMatchers(HttpMethod.PATCH, "/api/report-categories/**").authenticated()
 
+                    // Archivos subidos - público (para ver imágenes/PDFs)
+                    .requestMatchers("/uploads/**").permitAll()
                     // Resto de endpoints requieren autenticación
                     .anyRequest().authenticated()
             )

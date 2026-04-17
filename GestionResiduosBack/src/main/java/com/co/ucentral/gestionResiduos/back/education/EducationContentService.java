@@ -52,7 +52,7 @@ public class EducationContentService {
                 .description(dto.getDescription())
                 .category(dto.getCategory())
                 .fileType(fileType)
-                .fileUrl(path.toString()) // Guardamos la ruta donde quedó el archivo
+                .fileUrl("/" + path.toString().replace("\\", "/")) // Guardamos la ruta donde quedó el archivo
                 .build();
 
         return repository.save(content);
