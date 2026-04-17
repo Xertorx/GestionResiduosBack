@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +30,7 @@ public class EducationContentController {
 
     // ── HU21: El admin sube contenido multimedia ──
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> uploadContent(
             @ModelAttribute EducationContentRequestDTO dto,
             @RequestParam("file") MultipartFile file) {
@@ -59,6 +61,7 @@ public class EducationContentController {
 
     // ── Eliminar contenido por ID ──
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteContent(@PathVariable Long id) {
         try {
             service.deleteContent(id);

@@ -84,6 +84,13 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
                     .requestMatchers("/api/notifications/**").authenticated()
 
+                    // Contenidos educativos - SIN JWT (público)
+                    .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
+                    // Crear, eliminar contenidos educativos - SOLO ADMIN
+                    .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMIN")
+
                     // Resto de endpoints requieren autenticación
                     .anyRequest().authenticated()
             )
