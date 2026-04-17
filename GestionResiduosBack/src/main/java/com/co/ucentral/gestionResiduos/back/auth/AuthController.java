@@ -5,8 +5,10 @@ import com.co.ucentral.gestionResiduos.back.auth.login.LoginRequest;
 import com.co.ucentral.gestionResiduos.back.auth.register.*;
 import com.co.ucentral.gestionResiduos.back.auth.resetPassword.PasswordResetConfirmRequest;
 import com.co.ucentral.gestionResiduos.back.auth.resetPassword.PasswordResetRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
@@ -56,11 +58,12 @@ public class AuthController {
         return ResponseEntity.ok(authService.resendVerificationEmail(request.getEmail()));
     }
 
-    @PutMapping("/update-profile")
+    @PutMapping(value = "/update-profile", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RegisterResponse> updateProfile(
-            @RequestBody @Valid UpdateProfileRequest request) {
+            @Valid @ModelAttribute UpdateProfileRequest request,
+            @RequestPart(value = "photo", required = false) MultipartFile photo) {
 
-        return ResponseEntity.ok(authService.updateProfile(request));
+        return ResponseEntity.ok(authService.updateProfile(request, photo));
     }
     @PostMapping("/register/google")
     public ResponseEntity<AuthResponse> registerGoogle(

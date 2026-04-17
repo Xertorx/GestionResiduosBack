@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -19,6 +20,7 @@ import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
@@ -39,7 +41,8 @@ public class SecurityConfig {
                     .requestMatchers("/auth/**").permitAll()
                     .requestMatchers("/swagger-ui/**").permitAll()
                     .requestMatchers("/v3/api-docs/**").permitAll()
-                    
+                    .requestMatchers("/uploads/**").permitAll()
+
                     // GET EcoPoints - SIN JWT (público)
                     .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()
                     // POST, PUT, DELETE, PATCH EcoPoints - CON JWT (protegido)
@@ -63,8 +66,31 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/report-categories/**").authenticated()
                     .requestMatchers(HttpMethod.PATCH, "/api/report-categories/**").authenticated()
 
-                    // Archivos subidos - público (para ver imágenes/PDFs)
+                    // Usuarios - CON JWT (perfil propio)
+                    .requestMatchers("/api/users/**").authenticated()
                     .requestMatchers("/uploads/**").permitAll()
+                    // GET Calendarios por localidad - SIN JWT (público)
+                    .requestMatchers(HttpMethod.GET, "/api/schedules/district/**").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/schedules/{id}").permitAll()
+                    // GET todos, POST, PUT, DELETE, PATCH Calendarios - CON JWT (admin)
+                    .requestMatchers(HttpMethod.GET, "/api/schedules").authenticated()
+                    .requestMatchers(HttpMethod.POST, "/api/schedules/**").authenticated()
+                    .requestMatchers(HttpMethod.PUT, "/api/schedules/**").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").authenticated()
+                    .requestMatchers(HttpMethod.PATCH, "/api/schedules/**").authenticated()
+
+                    // Notificaciones
+                    .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/active").permitAll()
+                    .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
+                    .requestMatchers("/api/notifications/**").authenticated()
+
+                    // Contenidos educativos - SIN JWT (público)
+                    .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
+                    // Crear, eliminar contenidos educativos - SOLO ADMIN
+                    .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMIN")
+
                     // Resto de endpoints requieren autenticación
                     .anyRequest().authenticated()
             )

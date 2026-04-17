@@ -8,6 +8,10 @@ import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -255,6 +259,18 @@ public class ReportService {
                 .stream()
                 .map(reportMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtener reportes con filtros combinados y paginación.
+     * Todos los filtros son opcionales.
+     * GET /api/reports/search?status=pendiente&type=punto_critico&dateFrom=2026-01-01&dateTo=2026-12-31&categoryId=1&page=0&size=10
+     */
+    public Page<ReportDTO> searchReports(String status, String type, java.sql.Date dateFrom,
+                                          java.sql.Date dateTo, Integer categoryId, int page, int size) {
+        Specification<Report> spec = ReportSpecification.withFilters(status, type, dateFrom, dateTo, categoryId);
+        Pageable pageable = PageRequest.of(page, size);
+        return reportRepository.findAll(spec, pageable).map(reportMapper::toDTO);
     }
 }
 

@@ -78,6 +78,14 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage());
     }
 
+    // ========== Excepciones de restricción de perfil ==========
+
+    @ExceptionHandler(ProfileUpdateNotAllowedException.class)
+    public ResponseEntity<Map<String, Object>> handleProfileUpdateNotAllowed(ProfileUpdateNotAllowedException ex) {
+        logger.warn("Actualización de perfil no permitida: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", ex.getMessage());
+    }
+
     // ========== Excepciones de envío de correo ==========
 
     @ExceptionHandler(EmailSendException.class)
@@ -87,7 +95,6 @@ public class GlobalExceptionHandler {
     }
 
     // ========== Excepciones de validación ==========
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         logger.warn("Errores de validación en los datos enviados");
