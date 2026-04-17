@@ -34,7 +34,7 @@ public class EmailService {
     .logo { display: block; margin: 0 auto 24px; width: 80px; }
     h1 { color: #2e7d32; font-size: 1.5rem; margin-bottom: 12px; }
     p { color: #444; font-size: 1rem; line-height: 1.6; }
-    .button { display: block; width: fit-content; margin: 24px auto 0; background: #2e7d32 !important; color: #fff !important; text-decoration: none !important; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 1rem; border: none !important; }
+    .button { display: block; width: fit-content; margin: 24px auto 0; background: #2e7d32; color: #fff; text-decoration: none; padding: 12px 32px; border-radius: 6px; font-weight: 600; font-size: 1rem; }
     .footer { margin-top: 32px; text-align: center; color: #888; font-size: 0.9rem; }
   </style>
 </head>
@@ -46,7 +46,7 @@ public class EmailService {
       Hemos recibido una solicitud para <b>${accion}</b> en tu cuenta.<br>
       Haz clic en el siguiente botón para continuar:
     </p>
-    <a class="button" href="${enlace}" style="display:block;width:fit-content;margin:24px auto 0;background:#2e7d32 !important;color:#fff !important;text-decoration:none !important;padding:12px 32px;border-radius:6px;font-weight:600;font-size:1rem;border:none !important;">${textoBoton}</a>
+    <a class="button" href="${enlace}">${textoBoton}</a>
     <p style="margin-top:24px;">
       Si no solicitaste esto, puedes ignorar este correo.<br>
       ¡Gracias por confiar en nuestro servicio!
