@@ -12,13 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/education")
-@CrossOrigin(
-        origins = {"http://localhost:4200", "http://localhost:4000"},
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
-                RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.OPTIONS},
-        allowedHeaders = "*",
-        allowCredentials = "true"
-)
 public class EducationContentController {
 
     private final EducationContentService service;
@@ -30,7 +23,7 @@ public class EducationContentController {
 
     // ── HU21: El admin sube contenido multimedia ──
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> uploadContent(
             @ModelAttribute EducationContentRequestDTO dto,
             @RequestParam("file") MultipartFile file) {
@@ -61,7 +54,7 @@ public class EducationContentController {
 
     // ── Eliminar contenido por ID ──
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<?> deleteContent(@PathVariable Long id) {
         try {
             service.deleteContent(id);

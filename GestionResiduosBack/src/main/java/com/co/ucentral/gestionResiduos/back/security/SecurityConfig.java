@@ -87,9 +87,9 @@ public class SecurityConfig {
                     // Contenidos educativos - SIN JWT (público)
                     .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
                     // Crear, eliminar contenidos educativos - SOLO ADMIN
-                    .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMIN")
+                    .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                    .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                    .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMINISTRADOR")
 
                     // Resto de endpoints requieren autenticación
                     .anyRequest().authenticated()
