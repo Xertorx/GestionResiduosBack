@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.reporte;
 
+import com.co.ucentral.gestionResiduos.back.notification.NotificationService;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategory;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategoryRepository;
 import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
@@ -35,6 +36,7 @@ public class ReportService {
     private final ReportMapper reportMapper;
     private final UserRepository userRepository;
     private final ReportCategoryRepository categoryRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.upload.dir:./uploads/reports}")
     private String uploadDir;
@@ -119,7 +121,6 @@ public class ReportService {
         if (dto.getCalendarId() == null) {
             throw new IllegalArgumentException("El ID del calendario es obligatorio para reportes de incumplimiento");
         }
-        // La imagen es opcional para este tipo
     }
 
     /**
@@ -131,15 +132,12 @@ public class ReportService {
                 throw new IllegalArgumentException("El archivo debe ser una imagen");
             }
 
-            // Crear directorio si no existe
             Path uploadPath = Paths.get(uploadDir);
             Files.createDirectories(uploadPath);
 
-            // Generar nombre único
             String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
             Path filePath = uploadPath.resolve(fileName);
 
-            // Guardar archivo
             Files.copy(image.getInputStream(), filePath);
             log.info("Imagen guardada: {}", fileName);
 
@@ -164,7 +162,6 @@ public class ReportService {
      * HU34: Obtener reportes del usuario autenticado
      */
     public List<ReportDTO> getMyReports(String emailUsuario) {
-        // Obtener usuario por email del JWT
         User user = userRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + emailUsuario));
 
@@ -195,6 +192,7 @@ public class ReportService {
 
     /**
      * HU26: Cambiar estado de un reporte
+     * HU27: Notificar al ciudadano cuando el estado cambia
      */
     public ReportDTO changeStatus(Long id, String newStatus) {
         Report report = reportRepository.findById(id)
@@ -204,6 +202,9 @@ public class ReportService {
             throw new IllegalArgumentException("Estado inválido. Debe ser: pendiente, en_revision, resuelto, rechazado");
         }
 
+        // HU27: Guardamos el estado anterior para comparar después
+        String previousStatus = report.getStatus();
+
         report.setStatus(newStatus);
         if ("resuelto".equals(newStatus)) {
             report.setResolvedAt(new Date(System.currentTimeMillis()));
@@ -211,6 +212,11 @@ public class ReportService {
 
         Report reportUpdated = reportRepository.save(report);
         log.info("Estado del reporte {} cambiado a: {}", id, newStatus);
+
+        // HU27: Solo notificar si realmente cambió el estado
+        if (previousStatus == null || !previousStatus.equals(newStatus)) {
+            notificationService.notifyReportStatusChange(reportUpdated);
+        }
 
         return reportMapper.toDTO(reportUpdated);
     }
@@ -220,7 +226,7 @@ public class ReportService {
      */
     private boolean isValidStatus(String status) {
         return status.equals("pendiente") || status.equals("en_revision") ||
-               status.equals("resuelto") || status.equals("rechazado");
+                status.equals("resuelto") || status.equals("rechazado");
     }
 
     /**
@@ -263,14 +269,11 @@ public class ReportService {
 
     /**
      * Obtener reportes con filtros combinados y paginación.
-     * Todos los filtros son opcionales.
-     * GET /api/reports/search?status=pendiente&type=punto_critico&dateFrom=2026-01-01&dateTo=2026-12-31&categoryId=1&page=0&size=10
      */
     public Page<ReportDTO> searchReports(String status, String type, java.sql.Date dateFrom,
-                                          java.sql.Date dateTo, Integer categoryId, int page, int size) {
+                                         java.sql.Date dateTo, Integer categoryId, int page, int size) {
         Specification<Report> spec = ReportSpecification.withFilters(status, type, dateFrom, dateTo, categoryId);
         Pageable pageable = PageRequest.of(page, size);
         return reportRepository.findAll(spec, pageable).map(reportMapper::toDTO);
     }
 }
-
