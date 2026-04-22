@@ -35,97 +35,97 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
-            .csrf(csrf -> csrf.disable())
-            .authorizeHttpRequests(auth -> auth
-                    // Endpoints públicos
-                    .requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/swagger-ui/**").permitAll()
-                    .requestMatchers("/v3/api-docs/**").permitAll()
-                    .requestMatchers("/uploads/**").permitAll()
+                .csrf(csrf -> csrf.disable())
+                .authorizeHttpRequests(auth -> auth
+                        // Endpoints públicos
+                        .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/uploads/**").permitAll()
 
-                    // GET EcoPoints - SIN JWT (público)
-                    .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()
-                    // POST, PUT, DELETE, PATCH EcoPoints - CON JWT (protegido)
-                    .requestMatchers(HttpMethod.POST, "/api/ecopoints/**").authenticated()
-                    .requestMatchers(HttpMethod.PUT, "/api/ecopoints/**").authenticated()
-                    .requestMatchers(HttpMethod.DELETE, "/api/ecopoints/**").authenticated()
-                    .requestMatchers(HttpMethod.PATCH, "/api/ecopoints/**").authenticated()
-                    
-                    // POST Reportes - CON JWT (crear reporte requiere autenticación)
-                    .requestMatchers(HttpMethod.POST, "/api/reports/**").authenticated()
-                    // PATCH Reportes (cambiar estado) - CON JWT (solo admin)
-                    .requestMatchers(HttpMethod.PATCH, "/api/reports/**").authenticated()
-                    // GET Reportes - CON JWT (ver reportes requiere autenticación)
-                    .requestMatchers(HttpMethod.GET, "/api/reports/**").authenticated()
+                        // GET EcoPoints - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()
+                        // POST, PUT, DELETE, PATCH EcoPoints - CON JWT (protegido)
+                        .requestMatchers(HttpMethod.POST, "/api/ecopoints/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/ecopoints/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/ecopoints/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/ecopoints/**").authenticated()
 
-                    // GET Categorías (todas, activas, por ID) - SIN JWT (público)
-                    .requestMatchers(HttpMethod.GET, "/api/report-categories/**").permitAll()
-                    // POST, PUT, DELETE, PATCH Categorías - CON JWT (admin)
-                    .requestMatchers(HttpMethod.POST, "/api/report-categories/**").authenticated()
-                    .requestMatchers(HttpMethod.PUT, "/api/report-categories/**").authenticated()
-                    .requestMatchers(HttpMethod.DELETE, "/api/report-categories/**").authenticated()
-                    .requestMatchers(HttpMethod.PATCH, "/api/report-categories/**").authenticated()
+                        // POST Reportes - CON JWT (crear reporte requiere autenticación)
+                        .requestMatchers(HttpMethod.POST, "/api/reports/**").authenticated()
+                        // PATCH Reportes (cambiar estado) - CON JWT (solo admin)
+                        .requestMatchers(HttpMethod.PATCH, "/api/reports/**").authenticated()
+                        // GET Reportes - CON JWT (ver reportes requiere autenticación)
+                        .requestMatchers(HttpMethod.GET, "/api/reports/**").authenticated()
 
-                    // Usuarios - CON JWT (perfil propio)
-                    .requestMatchers("/api/users/**").authenticated()
-                    .requestMatchers("/uploads/**").permitAll()
-                    // GET Calendarios por localidad - SIN JWT (público)
-                    .requestMatchers(HttpMethod.GET, "/api/schedules/district/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/schedules/{id}").permitAll()
-                    // GET todos, POST, PUT, DELETE, PATCH Calendarios - CON JWT (admin)
-                    .requestMatchers(HttpMethod.GET, "/api/schedules").authenticated()
-                    .requestMatchers(HttpMethod.POST, "/api/schedules/**").authenticated()
-                    .requestMatchers(HttpMethod.PUT, "/api/schedules/**").authenticated()
-                    .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").authenticated()
-                    .requestMatchers(HttpMethod.PATCH, "/api/schedules/**").authenticated()
+                        // GET Categorías (todas, activas, por ID) - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/report-categories/**").permitAll()
+                        // POST, PUT, DELETE, PATCH Categorías - CON JWT (admin)
+                        .requestMatchers(HttpMethod.POST, "/api/report-categories/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/report-categories/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/report-categories/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/report-categories/**").authenticated()
 
-                    // Notificaciones
-                    .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/active").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
-                    .requestMatchers("/api/notifications/**").authenticated()
+                        // Usuarios - CON JWT (perfil propio)
+                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/uploads/**").permitAll()
+                        // GET Calendarios por localidad - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/district/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/schedules/{id}").permitAll()
+                        // GET todos, POST, PUT, DELETE, PATCH Calendarios - CON JWT (admin)
+                        .requestMatchers(HttpMethod.GET, "/api/schedules").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/schedules/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/schedules/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/schedules/**").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/schedules/**").authenticated()
 
-                    // Contenidos educativos - SIN JWT (público)
-                    .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
-                    // Crear, eliminar contenidos educativos - SOLO ADMIN
-                    .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMIN")
-                    .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMIN")
+                        // Notificaciones
+                        .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/active").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
+                        .requestMatchers("/api/notifications/**").authenticated()
 
-                    // Resto de endpoints requieren autenticación
-                    .anyRequest().authenticated()
-            )
-            // Manejo de errores de autenticación (401) y acceso denegado (403) como JSON
-            .exceptionHandling(exception -> exception
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                        response.setCharacterEncoding("UTF-8");
+                        // Contenidos educativos - SIN JWT (público)
+                        // Crear, editar, eliminar contenidos educativos - SOLO ADMINISTRADOR
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMINISTRADOR")
 
-                        Map<String, Object> errorResponse = new HashMap<>();
-                        errorResponse.put("timestamp", LocalDateTime.now().toString());
-                        errorResponse.put("status", 401);
-                        errorResponse.put("error", "Unauthorized");
-                        errorResponse.put("message", "No estás autenticado. Debes enviar un token JWT válido en el header Authorization.");
-                        errorResponse.put("path", request.getRequestURI());
+                        // Resto de endpoints requieren autenticación
+                        .anyRequest().authenticated()
+                )
+                // Manejo de errores de autenticación (401) y acceso denegado (403) como JSON
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
 
-                        objectMapper.writeValue(response.getOutputStream(), errorResponse);
-                    })
-                    .accessDeniedHandler((request, response, accessDeniedException) -> {
-                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                        response.setCharacterEncoding("UTF-8");
+                            Map<String, Object> errorResponse = new HashMap<>();
+                            errorResponse.put("timestamp", LocalDateTime.now().toString());
+                            errorResponse.put("status", 401);
+                            errorResponse.put("error", "Unauthorized");
+                            errorResponse.put("message", "No estás autenticado. Debes enviar un token JWT válido en el header Authorization.");
+                            errorResponse.put("path", request.getRequestURI());
 
-                        Map<String, Object> errorResponse = new HashMap<>();
-                        errorResponse.put("timestamp", LocalDateTime.now().toString());
-                        errorResponse.put("status", 403);
-                        errorResponse.put("error", "Forbidden");
-                        errorResponse.put("message", "No tienes permisos para acceder a este recurso.");
-                        errorResponse.put("path", request.getRequestURI());
+                            objectMapper.writeValue(response.getOutputStream(), errorResponse);
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
 
-                        objectMapper.writeValue(response.getOutputStream(), errorResponse);
-                    })
-            )
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+                            Map<String, Object> errorResponse = new HashMap<>();
+                            errorResponse.put("timestamp", LocalDateTime.now().toString());
+                            errorResponse.put("status", 403);
+                            errorResponse.put("error", "Forbidden");
+                            errorResponse.put("message", "No tienes permisos para acceder a este recurso.");
+                            errorResponse.put("path", request.getRequestURI());
+
+                            objectMapper.writeValue(response.getOutputStream(), errorResponse);
+                        })
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

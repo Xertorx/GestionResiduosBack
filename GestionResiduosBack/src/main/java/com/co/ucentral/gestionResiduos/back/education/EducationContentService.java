@@ -2,13 +2,17 @@ package com.co.ucentral.gestionResiduos.back.education;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class EducationContentService {
@@ -19,40 +23,54 @@ public class EducationContentService {
     @Autowired
     public EducationContentService(EducationContentRepository repository) {
         this.repository = repository;
-        // Crea el directorio automáticamente si no existe al arrancar
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
             directory.mkdirs();
         }
     }
 
-    public EducationContent saveContent(EducationContentRequestDTO dto, MultipartFile file) throws IOException {
-        if (file.isEmpty()) {
-            throw new RuntimeException("El archivo está vacío");
+    // ── HU21 mejorada: guardar contenido con MÚLTIPLES archivos ──
+    @Transactional
+    public EducationContent saveContent(EducationContentRequestDTO dto, MultipartFile[] files) throws IOException {
+
+        List<EducationFile> savedFiles = new ArrayList<>();
+
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) continue;
+
+            String originalFilename = file.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.contains(".")) {
+                throw new RuntimeException("Nombre de archivo inválido: " + originalFilename);
+            }
+
+            // 1. Nombre único para evitar colisiones (timestamp + índice)
+            String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+            String newFileName = System.currentTimeMillis() + "_" + savedFiles.size() + fileExtension;
+            Path path = Paths.get(UPLOAD_DIR + newFileName);
+            Files.write(path, file.getBytes());
+
+            // 2. Determinar tipo
+            String fileType = "OTRO";
+            if (fileExtension.equalsIgnoreCase(".pdf")) fileType = "PDF";
+            else if (fileExtension.matches("(?i)\\.(jpg|png|jpeg|webp)")) fileType = "IMAGE";
+            else if (fileExtension.matches("(?i)\\.(mp4|avi|mkv)")) fileType = "VIDEO";
+
+            // 3. Agregar a la lista
+            savedFiles.add(EducationFile.builder()
+                    .fileUrl("/" + path.toString().replace("\\", "/"))
+                    .fileType(fileType)
+                    .build());
         }
 
-        // 1. Guardar el archivo físicamente en el PC/Servidor
-        byte[] bytes = file.getBytes();
-        String originalFilename = file.getOriginalFilename();
-        String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-        // Le ponemos la fecha en milisegundos al nombre para evitar que dos archivos se llamen igual y se reemplacen
-        String newFileName = System.currentTimeMillis() + fileExtension;
-        Path path = Paths.get(UPLOAD_DIR + newFileName);
-        Files.write(path, bytes);
+        if (savedFiles.isEmpty()) {
+            throw new RuntimeException("No se recibieron archivos válidos");
+        }
 
-        // 2. Determinar qué tipo de archivo es (para la base de datos)
-        String fileType = "OTRO";
-        if (fileExtension.equalsIgnoreCase(".pdf")) fileType = "PDF";
-        else if (fileExtension.matches("(?i)\\.(jpg|png|jpeg|webp)")) fileType = "IMAGE";
-        else if (fileExtension.matches("(?i)\\.(mp4|avi|mkv)")) fileType = "VIDEO";
-
-        // 3. Guardar todo en PostgreSQL
         EducationContent content = EducationContent.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .category(dto.getCategory())
-                .fileType(fileType)
-                .fileUrl("/" + path.toString().replace("\\", "/")) // Guardamos la ruta donde quedó el archivo
+                .files(savedFiles)
                 .build();
 
         return repository.save(content);
@@ -61,8 +79,22 @@ public class EducationContentService {
     public List<EducationContent> getAllContents() {
         return repository.findAll();
     }
-    public java.util.Optional<EducationContent> getContentById(Long id) {
+
+    public Optional<EducationContent> getContentById(Long id) {
         return repository.findById(id);
+    }
+
+    // ── NUEVO: editar solo metadata (no toca archivos) ──
+    @Transactional
+    public EducationContent updateContent(Long id, EducationContentRequestDTO dto) {
+        EducationContent content = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Contenido no encontrado con id: " + id));
+
+        content.setTitle(dto.getTitle());
+        content.setDescription(dto.getDescription());
+        content.setCategory(dto.getCategory());
+
+        return repository.save(content);
     }
 
     public void deleteContent(Long id) {

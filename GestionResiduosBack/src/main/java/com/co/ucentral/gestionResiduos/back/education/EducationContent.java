@@ -5,7 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Builder
@@ -25,13 +28,16 @@ public class EducationContent {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(nullable = false)
-    private String fileType; // Ejemplo: "PDF", "IMAGE", "VIDEO"
+    private String category;
 
-    @Column(nullable = false)
-    private String fileUrl; // La ruta donde guardaremos el archivo en el servidor
-
-    private String category; // Para agrupar por temas de reciclaje
+    // ── Lista de archivos adjuntos (antes era un solo fileUrl/fileType) ──
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "education_content_files",
+            joinColumns = @JoinColumn(name = "content_id")
+    )
+    @Builder.Default
+    private List<EducationFile> files = new ArrayList<>();
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

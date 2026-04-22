@@ -1,7 +1,7 @@
 info:
   name: Cambiar el estado del reporte
   type: http
-  seq: 16
+  seq: 12
 
 http:
   method: PATCH
