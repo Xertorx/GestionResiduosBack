@@ -8,7 +8,7 @@ http:
   url: http://localhost:8080/api/v1/education
   auth:
     type: bearer
-    token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnYXJjaWFkaWVnbzk2QGhvdG1haWwuY29tIiwiaWF0IjoxNzc1ODY1MTUwLCJleHAiOjE3NzU4NzIzNTB9.EgDe0LCPZ2da3MzRhTy0hupkvzVBwxLXGtWOQNkbePo
+    token: ""
 
 settings:
   encodeUrl: true

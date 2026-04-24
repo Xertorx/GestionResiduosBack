@@ -9,13 +9,15 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/City")
+@RequestMapping("/api/geography")
 @RequiredArgsConstructor
-
 public class CityController {
 
     private final CityService cityService;
 
-
+    @GetMapping("/cities")
+    public java.util.List<City> getAllCities() {
+        return cityService.getAllCities();
+    }
 
 }

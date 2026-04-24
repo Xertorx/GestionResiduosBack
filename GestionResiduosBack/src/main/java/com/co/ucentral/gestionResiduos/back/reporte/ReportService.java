@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.reporte;
 
+import com.co.ucentral.gestionResiduos.back.notification.NotificationService;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategory;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategoryRepository;
 import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
@@ -35,6 +36,7 @@ public class ReportService {
     private final ReportMapper reportMapper;
     private final UserRepository userRepository;
     private final ReportCategoryRepository categoryRepository;
+    private final NotificationService notificationService;
 
     @Value("${app.upload.dir:./uploads/reports}")
     private String uploadDir;
@@ -82,8 +84,16 @@ public class ReportService {
         report.setType(dto.getType());
         report.setCategory(category);
         report.setDescription(dto.getDescription());
-        report.setLatitude(dto.getLatitude());
-        report.setLongitude(dto.getLongitude());
+        // Para reportes de punto crítico (HU10) usamos lat/long del DTO (validados arriba).
+        // Para otros tipos (ej. incumplimiento_calendario) la base de datos puede aún requerir
+        // un valor no nulo; colocamos 0.0 como valor por defecto para evitar constraint violations.
+        if ("punto_critico".equals(dto.getType())) {
+            report.setLatitude(dto.getLatitude());
+            report.setLongitude(dto.getLongitude());
+        } else {
+            report.setLatitude(0.0);
+            report.setLongitude(0.0);
+        }
         report.setImageUrl(imageUrl);
         report.setCalendarId(dto.getCalendarId());
         report.setUser(user);
@@ -119,7 +129,6 @@ public class ReportService {
         if (dto.getCalendarId() == null) {
             throw new IllegalArgumentException("El ID del calendario es obligatorio para reportes de incumplimiento");
         }
-        // La imagen es opcional para este tipo
     }
 
     /**
@@ -131,15 +140,12 @@ public class ReportService {
                 throw new IllegalArgumentException("El archivo debe ser una imagen");
             }
 
-            // Crear directorio si no existe
             Path uploadPath = Paths.get(uploadDir);
             Files.createDirectories(uploadPath);
 
-            // Generar nombre único
             String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
             Path filePath = uploadPath.resolve(fileName);
 
-            // Guardar archivo
             Files.copy(image.getInputStream(), filePath);
             log.info("Imagen guardada: {}", fileName);
 
@@ -164,7 +170,6 @@ public class ReportService {
      * HU34: Obtener reportes del usuario autenticado
      */
     public List<ReportDTO> getMyReports(String emailUsuario) {
-        // Obtener usuario por email del JWT
         User user = userRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + emailUsuario));
 
@@ -195,6 +200,7 @@ public class ReportService {
 
     /**
      * HU26: Cambiar estado de un reporte
+     * HU27: Notificar al ciudadano cuando el estado cambia
      */
     public ReportDTO changeStatus(Long id, String newStatus) {
         Report report = reportRepository.findById(id)
@@ -204,6 +210,9 @@ public class ReportService {
             throw new IllegalArgumentException("Estado inválido. Debe ser: pendiente, en_revision, resuelto, rechazado");
         }
 
+        // HU27: Guardamos el estado anterior para comparar después
+        String previousStatus = report.getStatus();
+
         report.setStatus(newStatus);
         if ("resuelto".equals(newStatus)) {
             report.setResolvedAt(new Date(System.currentTimeMillis()));
@@ -211,6 +220,11 @@ public class ReportService {
 
         Report reportUpdated = reportRepository.save(report);
         log.info("Estado del reporte {} cambiado a: {}", id, newStatus);
+
+        // HU27: Solo notificar si realmente cambió el estado
+        if (previousStatus == null || !previousStatus.equals(newStatus)) {
+            notificationService.notifyReportStatusChange(reportUpdated);
+        }
 
         return reportMapper.toDTO(reportUpdated);
     }
@@ -220,7 +234,7 @@ public class ReportService {
      */
     private boolean isValidStatus(String status) {
         return status.equals("pendiente") || status.equals("en_revision") ||
-               status.equals("resuelto") || status.equals("rechazado");
+                status.equals("resuelto") || status.equals("rechazado");
     }
 
     /**
@@ -263,14 +277,59 @@ public class ReportService {
 
     /**
      * Obtener reportes con filtros combinados y paginación.
-     * Todos los filtros son opcionales.
-     * GET /api/reports/search?status=pendiente&type=punto_critico&dateFrom=2026-01-01&dateTo=2026-12-31&categoryId=1&page=0&size=10
      */
     public Page<ReportDTO> searchReports(String status, String type, java.sql.Date dateFrom,
-                                          java.sql.Date dateTo, Integer categoryId, int page, int size) {
+                                         java.sql.Date dateTo, Integer categoryId, int page, int size) {
         Specification<Report> spec = ReportSpecification.withFilters(status, type, dateFrom, dateTo, categoryId);
         Pageable pageable = PageRequest.of(page, size);
         return reportRepository.findAll(spec, pageable).map(reportMapper::toDTO);
     }
-}
 
+    /**
+     * Obtener estadísticas de reportes filtradas por rango de fechas y estado.
+     */
+    public ReportStatsDTO getStats(java.sql.Date startDate, java.sql.Date endDate, String status) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate y endDate son requeridos");
+        }
+
+        Specification<Report> spec = ReportSpecification.withFilters(status, null, startDate, endDate, null);
+        List<Report> filtered = reportRepository.findAll(spec);
+
+        ReportStatsDTO dto = new ReportStatsDTO();
+        dto.setTotal(filtered.size());
+
+        // Conteo por estado
+        java.util.Map<String, Long> byStatus = filtered.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Report::getStatus, java.util.stream.Collectors.counting()));
+        java.util.List<StatusCountDTO> statusList = byStatus.entrySet().stream()
+                .map(e -> new StatusCountDTO(e.getKey(), e.getValue().intValue()))
+                .collect(java.util.stream.Collectors.toList());
+        dto.setByStatus(statusList);
+
+        // Trend por día (fecha y conteo)
+        java.util.Map<java.sql.Date, Long> trend = filtered.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Report::getCreatedAt, java.util.stream.Collectors.counting()));
+        java.util.List<TrendDTO> trendList = trend.entrySet().stream()
+                .map(e -> new TrendDTO(e.getKey().toString(), e.getValue().intValue()))
+                .sorted((a,b) -> a.getDate().compareTo(b.getDate()))
+                .collect(java.util.stream.Collectors.toList());
+        dto.setTrend(trendList);
+
+        long resolved = filtered.stream().filter(r -> "resuelto".equals(r.getStatus())).count();
+        long pending = filtered.stream().filter(r -> "pendiente".equals(r.getStatus())).count();
+        dto.setResolvedPercentage(filtered.isEmpty() ? 0 : (resolved * 100.0 / filtered.size()));
+        dto.setPendingPercentage(filtered.isEmpty() ? 0 : (pending * 100.0 / filtered.size()));
+
+        // Tiempo promedio de resolución (en días) para los resueltos
+        java.util.DoubleSummaryStatistics avgRes = filtered.stream()
+                .filter(r -> r.getResolvedAt() != null && r.getCreatedAt() != null)
+                .mapToDouble(r -> (r.getResolvedAt().getTime() - r.getCreatedAt().getTime()) / (1000.0*60*60*24))
+                .summaryStatistics();
+        dto.setAvgResolutionTime(avgRes.getCount() == 0 ? 0 : avgRes.getAverage());
+
+        return dto;
+    }
+
+
+}

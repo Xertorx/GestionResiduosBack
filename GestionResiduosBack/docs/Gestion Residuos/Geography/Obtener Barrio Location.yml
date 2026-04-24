@@ -1,0 +1,20 @@
+info:
+  name: Obtener Barrio (Distrito y Ciudad)
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: http://localhost:8080/api/geography/neighborhoods/{{neighborhoodId}}/location
+  headers:
+    - name: Accept
+      value: application/json
+  description: |
+    Devuelve la información del barrio junto con su distrito y ciudad.
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

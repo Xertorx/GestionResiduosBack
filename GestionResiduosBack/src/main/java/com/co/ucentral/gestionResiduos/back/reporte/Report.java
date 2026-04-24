@@ -36,12 +36,12 @@ public class Report {
     @NotNull(message = "La descripción es obligatoria")
     private String description;
 
-    @Column(name = "latitud", nullable = false)
-    @NotNull(message = "La latitud es obligatoria (HU10)")
+    // Latitud/longitud: requeridas solo para HU10 (punto_critico).
+    // La validación específica por tipo se realiza en el servicio; aquí permitimos null.
+    @Column(name = "latitud", nullable = true)
     private Double latitude;
 
-    @Column(name = "longitud", nullable = false)
-    @NotNull(message = "La longitud es obligatoria (HU10)")
+    @Column(name = "longitud", nullable = true)
     private Double longitude;
 
     @Column(name = "imagen_url")

@@ -13,5 +13,14 @@ public class DistrictService {
         this.districtRepository = districtRepository;
     }
 
+    public java.util.List<District> getDistrictsByCity(Integer cityId) {
+        if (cityId == null) {
+            return districtRepository.findAll();
+        }
+        return districtRepository.findAll().stream()
+                .filter(d -> d.getCityId() != null && d.getCityId().getCityId() == cityId)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
 
 }
