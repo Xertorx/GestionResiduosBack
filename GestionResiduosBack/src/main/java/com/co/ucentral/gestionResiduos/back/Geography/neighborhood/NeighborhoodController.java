@@ -6,6 +6,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.co.ucentral.gestionResiduos.back.Geography.District.District;
+import com.co.ucentral.gestionResiduos.back.Geography.City.City;
+
 import java.util.List;
 
 @RestController
@@ -27,7 +30,7 @@ public class NeighborhoodController {
             throw new com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException("Barrio no encontrado: " + id);
         }
         District d = n.getDistrictId();
-        com.co.ucentral.gestionResiduos.back.Geography.City.City c = d != null ? d.getCityId() : null;
+        City c = d != null ? d.getCityId() : null;
         Response r = new Response();
         r.neighborhoodId = n.getNeighborhoodId();
         r.neighborhoodName = n.getName();

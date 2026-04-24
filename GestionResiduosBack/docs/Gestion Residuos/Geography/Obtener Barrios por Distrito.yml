@@ -5,14 +5,10 @@ info:
 
 http:
   method: GET
-  url: http://localhost:8080/api/geography/neighborhoods?districtId=1
+  url: http://localhost:8080/api/City
   headers:
     - name: Accept
       value: application/json
-  params:
-    - name: districtId
-      value: "1"
-      type: query
   auth:
     type: bearer
     token: "{{JWT}}"
