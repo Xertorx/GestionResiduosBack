@@ -58,6 +58,7 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
     }
 
+
     @ExceptionHandler(IdAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleIdAlreadyExists(IdAlreadyExistsException ex) {
         logger.warn("ID duplicado: {}", ex.getMessage());

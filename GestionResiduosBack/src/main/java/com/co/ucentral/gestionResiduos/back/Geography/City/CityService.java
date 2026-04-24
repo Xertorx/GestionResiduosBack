@@ -13,6 +13,10 @@ public class CityService {
         this.cityRepository = cityRepository;
     }
 
+    public java.util.List<City> getAllCities() {
+        return cityRepository.findAll();
+    }
+
 
 
 }

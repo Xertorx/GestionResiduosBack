@@ -85,6 +85,12 @@ public class SecurityConfig {
                         .requestMatchers("/api/notifications/**").authenticated()
 
                         // Contenidos educativos - SIN JWT (público)
+                        // Permitir GET públicos para listar/ver contenidos sin requerir JWT
+                        .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
+                        // Feedback de contenidos educativos (POST feedback y GET stats) - PÚBLICO
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/feedback").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/education/*/feedback/**").permitAll()
+
                         // Crear, editar, eliminar contenidos educativos - SOLO ADMINISTRADOR
                         .requestMatchers(HttpMethod.POST, "/api/v1/education/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/education/**").hasRole("ADMINISTRADOR")
