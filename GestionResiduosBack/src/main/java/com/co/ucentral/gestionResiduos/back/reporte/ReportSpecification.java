@@ -43,6 +43,8 @@ public class ReportSpecification {
                 predicates.add(cb.equal(root.get("category").get("id"), categoryId));
             }
 
+            // No hay filtro por barrio en la especificación (los reportes no están ligados directamente a barrio)
+
             // Ordenar por fecha de creación descendente
             query.orderBy(cb.desc(root.get("createdAt")));
 

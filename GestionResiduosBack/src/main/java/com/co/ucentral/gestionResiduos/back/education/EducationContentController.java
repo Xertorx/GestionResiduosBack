@@ -12,13 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/education")
-@CrossOrigin(
-        origins = {"http://localhost:4200", "http://localhost:4000"},
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT,
-                RequestMethod.DELETE, RequestMethod.PATCH, RequestMethod.OPTIONS},
-        allowedHeaders = "*",
-        allowCredentials = "true"
-)
 public class EducationContentController {
 
     private final EducationContentService service;

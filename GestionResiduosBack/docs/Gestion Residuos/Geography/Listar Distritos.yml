@@ -1,0 +1,20 @@
+info:
+  name: Listar Distritos
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: http://localhost:8080/api/geography/districts?cityId={{cityId}}
+  headers:
+    - name: Accept
+      value: application/json
+  description: |
+    Lista distritos. Si no se pasa cityId devuelve todos.
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+

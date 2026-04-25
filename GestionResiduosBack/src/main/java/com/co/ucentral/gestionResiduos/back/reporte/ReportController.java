@@ -151,5 +151,21 @@ public class ReportController {
         ReportStatisticsDTO stats = reportService.getStatistics();
         return ResponseEntity.ok(stats);
     }
+
+    /**
+     * Nuevo endpoint: GET /api/reports/stats
+     * Query params: startDate, endDate, status (optional), barrioId (optional)
+     * Solo ADMIN
+     */
+    @GetMapping("/stats")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<ReportStatsDTO> getFilteredStats(
+            @RequestParam java.sql.Date startDate,
+            @RequestParam java.sql.Date endDate,
+            @RequestParam(required = false) String status) {
+
+        ReportStatsDTO stats = reportService.getStats(startDate, endDate, status);
+        return ResponseEntity.ok(stats);
+    }
 }
 

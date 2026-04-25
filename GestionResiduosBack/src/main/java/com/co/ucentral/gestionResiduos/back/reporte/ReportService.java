@@ -84,8 +84,16 @@ public class ReportService {
         report.setType(dto.getType());
         report.setCategory(category);
         report.setDescription(dto.getDescription());
-        report.setLatitude(dto.getLatitude());
-        report.setLongitude(dto.getLongitude());
+        // Para reportes de punto crítico (HU10) usamos lat/long del DTO (validados arriba).
+        // Para otros tipos (ej. incumplimiento_calendario) la base de datos puede aún requerir
+        // un valor no nulo; colocamos 0.0 como valor por defecto para evitar constraint violations.
+        if ("punto_critico".equals(dto.getType())) {
+            report.setLatitude(dto.getLatitude());
+            report.setLongitude(dto.getLongitude());
+        } else {
+            report.setLatitude(0.0);
+            report.setLongitude(0.0);
+        }
         report.setImageUrl(imageUrl);
         report.setCalendarId(dto.getCalendarId());
         report.setUser(user);
@@ -276,4 +284,52 @@ public class ReportService {
         Pageable pageable = PageRequest.of(page, size);
         return reportRepository.findAll(spec, pageable).map(reportMapper::toDTO);
     }
+
+    /**
+     * Obtener estadísticas de reportes filtradas por rango de fechas y estado.
+     */
+    public ReportStatsDTO getStats(java.sql.Date startDate, java.sql.Date endDate, String status) {
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("startDate y endDate son requeridos");
+        }
+
+        Specification<Report> spec = ReportSpecification.withFilters(status, null, startDate, endDate, null);
+        List<Report> filtered = reportRepository.findAll(spec);
+
+        ReportStatsDTO dto = new ReportStatsDTO();
+        dto.setTotal(filtered.size());
+
+        // Conteo por estado
+        java.util.Map<String, Long> byStatus = filtered.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Report::getStatus, java.util.stream.Collectors.counting()));
+        java.util.List<StatusCountDTO> statusList = byStatus.entrySet().stream()
+                .map(e -> new StatusCountDTO(e.getKey(), e.getValue().intValue()))
+                .collect(java.util.stream.Collectors.toList());
+        dto.setByStatus(statusList);
+
+        // Trend por día (fecha y conteo)
+        java.util.Map<java.sql.Date, Long> trend = filtered.stream()
+                .collect(java.util.stream.Collectors.groupingBy(Report::getCreatedAt, java.util.stream.Collectors.counting()));
+        java.util.List<TrendDTO> trendList = trend.entrySet().stream()
+                .map(e -> new TrendDTO(e.getKey().toString(), e.getValue().intValue()))
+                .sorted((a,b) -> a.getDate().compareTo(b.getDate()))
+                .collect(java.util.stream.Collectors.toList());
+        dto.setTrend(trendList);
+
+        long resolved = filtered.stream().filter(r -> "resuelto".equals(r.getStatus())).count();
+        long pending = filtered.stream().filter(r -> "pendiente".equals(r.getStatus())).count();
+        dto.setResolvedPercentage(filtered.isEmpty() ? 0 : (resolved * 100.0 / filtered.size()));
+        dto.setPendingPercentage(filtered.isEmpty() ? 0 : (pending * 100.0 / filtered.size()));
+
+        // Tiempo promedio de resolución (en días) para los resueltos
+        java.util.DoubleSummaryStatistics avgRes = filtered.stream()
+                .filter(r -> r.getResolvedAt() != null && r.getCreatedAt() != null)
+                .mapToDouble(r -> (r.getResolvedAt().getTime() - r.getCreatedAt().getTime()) / (1000.0*60*60*24))
+                .summaryStatistics();
+        dto.setAvgResolutionTime(avgRes.getCount() == 0 ? 0 : avgRes.getAverage());
+
+        return dto;
+    }
+
+
 }
