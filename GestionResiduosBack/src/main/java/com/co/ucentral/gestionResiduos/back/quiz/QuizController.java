@@ -94,4 +94,14 @@ public class QuizController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
     }
+    // ── USUARIO: estadísticas propias para la pantalla de educación ──
+    @GetMapping("/me/stats")
+    public ResponseEntity<?> getMyStats(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            return ResponseEntity.ok(quizService.getUserStats(email));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(java.util.Map.of("message", e.getMessage()));
+        }
+    }
 }

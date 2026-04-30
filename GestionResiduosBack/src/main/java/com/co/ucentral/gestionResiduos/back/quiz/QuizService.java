@@ -174,7 +174,29 @@ public class QuizService {
                 .perQuestion(perQuestion)
                 .build();
     }
+    // ───────────────────── STATS DEL USUARIO ─────────────────────
+    public java.util.Map<String, Object> getUserStats(String userEmail) {
+        com.co.ucentral.gestionResiduos.back.user.User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado."));
 
+        long quizzesAnswered = attemptRepository.countDistinctQuizzesByUser(user);
+        long totalContents = contentRepository.count();
+        int points = user.getPoints() == null ? 0 : user.getPoints();
+
+        // Progreso = % de quizzes respondidos sobre total de contenidos
+        int progress = 0;
+        if (totalContents > 0) {
+            progress = (int) Math.round((quizzesAnswered * 100.0) / totalContents);
+            if (progress > 100) progress = 100;
+        }
+
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("totalContents", totalContents);
+        result.put("quizzesAnswered", quizzesAnswered);
+        result.put("points", points);
+        result.put("progress", progress);
+        return result;
+    }
     // ───────────────────────── HELPERS ─────────────────────────
     private void validateDto(QuizRequestDTO dto) {
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {

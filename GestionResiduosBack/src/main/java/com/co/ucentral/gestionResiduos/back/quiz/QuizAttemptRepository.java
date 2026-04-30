@@ -2,6 +2,8 @@ package com.co.ucentral.gestionResiduos.back.quiz;
 
 import com.co.ucentral.gestionResiduos.back.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -11,4 +13,8 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, Long> 
     List<QuizAttempt> findByUserAndQuiz(User user, Quiz quiz);
     List<QuizAttempt> findByUserOrderByCompletedAtDesc(User user);
     boolean existsByUserAndQuiz(User user, Quiz quiz);
+
+    /** ── HU22: cuántos quizzes únicos ha respondido el usuario ── */
+    @Query("SELECT COUNT(DISTINCT a.quiz.id) FROM QuizAttempt a WHERE a.user = :user")
+    long countDistinctQuizzesByUser(@Param("user") User user);
 }
