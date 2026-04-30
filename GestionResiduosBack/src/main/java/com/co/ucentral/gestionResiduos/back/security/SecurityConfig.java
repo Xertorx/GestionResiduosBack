@@ -96,6 +96,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/education/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                        // ── HU22: Quizzes interactivos ──
+                        // GET público (jugar quiz, verificar existencia)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*/exists").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*").permitAll()
+                        // GET admin (ver respuestas correctas) → solo ADMINISTRADOR
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*/admin").hasRole("ADMINISTRADOR")
+                        // POST attempt → cualquier usuario autenticado
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempt").authenticated()
+                        // POST/PUT/DELETE quizzes → solo ADMINISTRADOR
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
 
                         // Resto de endpoints requieren autenticación
                         .anyRequest().authenticated()
