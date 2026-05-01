@@ -109,6 +109,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
 
+                        // ── HU31: Ranking de usuarios (público) ──
+                        .requestMatchers(HttpMethod.GET, "/api/ranking/**").permitAll()
                         // Resto de endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
