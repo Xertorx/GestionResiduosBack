@@ -16,6 +16,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementDTO;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementService;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,6 +39,8 @@ public class ReportService {
     private final UserRepository userRepository;
     private final ReportCategoryRepository categoryRepository;
     private final NotificationService notificationService;
+    private final AchievementService achievementService;
+
 
     @Value("${app.upload.dir:./uploads/reports}")
     private String uploadDir;
@@ -103,8 +107,14 @@ public class ReportService {
         Report reportSaved = reportRepository.save(report);
         log.info("Reporte creado exitosamente. ID: {}", reportSaved.getId());
 
-        // 8. Convertir a DTO y retornar
-        return reportMapper.toDTO(reportSaved);
+        // 8. Convertir a DTO
+        ReportDTO reportDTO = reportMapper.toDTO(reportSaved);
+
+        // 9. Sistema de Logros: evaluar logros después de crear reporte
+        List<AchievementDTO> newAchievements = achievementService.checkAfterReport(user);
+        reportDTO.setNewAchievements(newAchievements);
+
+        return reportDTO;
     }
 
     /**

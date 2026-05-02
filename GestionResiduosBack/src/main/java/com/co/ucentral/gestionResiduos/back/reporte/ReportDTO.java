@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.sql.Date;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementDTO;
+import java.util.List;
+
 
 /**
  * DTO para responder reportes - Usado en listados y detalles
@@ -28,5 +31,7 @@ public class ReportDTO {
     private Date createdAt;
     private Date updatedAt;
     private Date resolvedAt;
+    /** Logros nuevos obtenidos al crear este reporte */
+    private List<AchievementDTO> newAchievements;
 }
 

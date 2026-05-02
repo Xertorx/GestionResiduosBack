@@ -6,6 +6,8 @@ import com.co.ucentral.gestionResiduos.back.user.User;
 import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementDTO;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,15 +21,19 @@ public class QuizService {
     private final QuizAttemptRepository attemptRepository;
     private final EducationContentRepository contentRepository;
     private final UserRepository userRepository;
+    private final AchievementService achievementService;
+
 
     public QuizService(QuizRepository quizRepository,
                        QuizAttemptRepository attemptRepository,
                        EducationContentRepository contentRepository,
-                       UserRepository userRepository) {
+                       UserRepository userRepository,
+                       AchievementService achievementService) {
         this.quizRepository = quizRepository;
         this.attemptRepository = attemptRepository;
         this.contentRepository = contentRepository;
         this.userRepository = userRepository;
+        this.achievementService = achievementService;
     }
 
     // ───────────────────────── CREATE ─────────────────────────
@@ -165,6 +171,9 @@ public class QuizService {
             userRepository.save(user);
         }
 
+        // ── Sistema de Logros: evaluar logros después del quiz ──
+        java.util.List<AchievementDTO> newAchievements = achievementService.checkAfterQuiz(user);
+
         return QuizResultDTO.builder()
                 .correctAnswers(correct)
                 .totalQuestions(total)
@@ -172,6 +181,7 @@ public class QuizService {
                 .userTotalPoints(user.getPoints() == null ? 0 : user.getPoints())
                 .firstAttempt(firstAttempt)
                 .perQuestion(perQuestion)
+                .newAchievements(newAchievements)
                 .build();
     }
     // ───────────────────── STATS DEL USUARIO ─────────────────────

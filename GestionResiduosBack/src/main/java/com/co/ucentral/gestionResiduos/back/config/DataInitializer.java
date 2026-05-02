@@ -2,6 +2,8 @@ package com.co.ucentral.gestionResiduos.back.config;
 
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
+import com.co.ucentral.gestionResiduos.back.achievement.Achievement;
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementRepository;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategory;
 import com.co.ucentral.gestionResiduos.back.reporte.category.ReportCategoryRepository;
 import com.co.ucentral.gestionResiduos.back.role.Role;
@@ -28,15 +30,18 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final NeighborhoodRepository neighborhoodRepository;
+    private final AchievementRepository achievementRepository;
 
     public DataInitializer(RoleRepository roleRepository, ReportCategoryRepository categoryRepository,
                            UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           NeighborhoodRepository neighborhoodRepository) {
+                           NeighborhoodRepository neighborhoodRepository,
+                           AchievementRepository achievementRepository) {
         this.roleRepository = roleRepository;
         this.categoryRepository = categoryRepository;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.neighborhoodRepository = neighborhoodRepository;
+        this.achievementRepository = achievementRepository;
     }
 
     @Override
@@ -45,6 +50,7 @@ public class DataInitializer implements CommandLineRunner {
         initRoles();
         initReportCategories();
         initAdminUser();
+        initAchievements();
     }
 
     private void initRoles() {
@@ -126,6 +132,44 @@ public class DataInitializer implements CommandLineRunner {
         } else {
             logger.info("El usuario administrador ya existe. No se requiere inicialización.");
         }
+    }
+
+    private void initAchievements() {
+        if (achievementRepository.count() == 0) {
+            logger.info("Creando logros por defecto...");
+
+            // ── Logros por Quizzes ──
+            createAchievement("Primer Quiz", "Completaste tu primer quiz educativo", "FIRST_QUIZ", 5, "book-open");
+            createAchievement("Estudiante Curioso", "Completaste 3 quizzes educativos", "QUIZZES_3", 10, "award");
+            createAchievement("Experto Ambiental", "Completaste 5 quizzes educativos", "QUIZZES_5", 20, "star");
+            createAchievement("Maestro del Reciclaje", "Completaste 10 quizzes educativos", "QUIZZES_10", 50, "trophy");
+
+            // ── Logros por Reportes ──
+            createAchievement("Primer Reporte", "Enviaste tu primer reporte ciudadano", "FIRST_REPORT", 5, "file-text");
+            createAchievement("Vigilante Vecinal", "Enviaste 3 reportes ciudadanos", "REPORTS_3", 10, "eye");
+            createAchievement("Guardián Ambiental", "Enviaste 5 reportes ciudadanos", "REPORTS_5", 20, "shield");
+            createAchievement("Héroe Ecológico", "Enviaste 10 reportes ciudadanos", "REPORTS_10", 50, "crown");
+
+            // ── Logros por Puntos ──
+            createAchievement("Semilla Verde", "Acumulaste 50 puntos", "POINTS_50", 5, "leaf");
+            createAchievement("Árbol Fuerte", "Acumulaste 100 puntos", "POINTS_100", 15, "trending-up");
+            createAchievement("Bosque Imparable", "Acumulaste 500 puntos", "POINTS_500", 50, "flame");
+
+            logger.info("Logros creados exitosamente.");
+        } else {
+            logger.info("La tabla de logros ya contiene registros.");
+        }
+    }
+
+    private void createAchievement(String nombre, String descripcion, String condicion, int puntos, String icono) {
+        Achievement a = Achievement.builder()
+                .nombre(nombre)
+                .descripcion(descripcion)
+                .condicion(condicion)
+                .puntosOtorgados(puntos)
+                .icono(icono)
+                .build();
+        achievementRepository.save(a);
     }
 }
 

@@ -1,5 +1,6 @@
 package com.co.ucentral.gestionResiduos.back.quiz.dto;
 
+import com.co.ucentral.gestionResiduos.back.achievement.AchievementDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,9 @@ public class QuizResultDTO {
     private Integer userTotalPoints;
     private boolean firstAttempt;
     private List<QuestionResult> perQuestion;
+
+    /** Logros nuevos obtenidos con esta acción */
+    private List<AchievementDTO> newAchievements;
 
     @Data
     @Builder

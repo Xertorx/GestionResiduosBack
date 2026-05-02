@@ -111,6 +111,8 @@ public class SecurityConfig {
 
                         // ── HU31: Ranking de usuarios (público) ──
                         .requestMatchers(HttpMethod.GET, "/api/ranking/**").permitAll()
+                        // ── Logros: requiere autenticación ──
+                        .requestMatchers("/api/achievements/**").authenticated()
                         // Resto de endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
