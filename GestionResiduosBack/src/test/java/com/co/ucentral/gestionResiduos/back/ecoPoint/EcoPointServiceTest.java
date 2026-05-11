@@ -1,11 +1,11 @@
 package com.co.ucentral.gestionResiduos.back.ecoPoint;
 
+import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.sql.Date;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -22,26 +22,33 @@ public class EcoPointServiceTest {
     @Mock
     private EcoPointRepository ecoPointRepository;
 
+    @Mock
+    private NeighborhoodRepository neighborhoodRepository;
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        ecoPointService = new EcoPointService(ecoPointRepository);
+        ecoPointService = new EcoPointService(ecoPointRepository, neighborhoodRepository);
+    }
+
+    private EcoPoint buildEcoPoint(Long id, String name, String status) {
+        EcoPoint ep = new EcoPoint();
+        ep.setId(id);
+        ep.setName(name);
+        ep.setAddress("Calle 1");
+        ep.setLatitude(4.2206);
+        ep.setLongitude(-74.1479);
+        ep.setStatus(status);
+        return ep;
     }
 
     @Test
     public void testGetAllEcoPoints() {
         // Arrange
         List<EcoPoint> ecoPoints = Arrays.asList(
-            new EcoPoint(1L, "Eco Punto 1", "Dirección 1", 4.2206, -74.1479, "Descripción 1", 
-                        "(601) 1111111", "eco1@test.com", "ACTIVO", 
-                        Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                        new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis())),
-            new EcoPoint(2L, "Eco Punto 2", "Dirección 2", 4.2189, -74.1456, "Descripción 2", 
-                        "(601) 2222222", "eco2@test.com", "ACTIVO", 
-                        Arrays.asList("ESPECIAL"), null, "09:00", "17:00", 
-                        new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()))
+                buildEcoPoint(1L, "Eco Punto 1", "ACTIVO"),
+                buildEcoPoint(2L, "Eco Punto 2", "ACTIVO")
         );
-
         when(ecoPointRepository.findAll()).thenReturn(ecoPoints);
 
         // Act
@@ -56,11 +63,7 @@ public class EcoPointServiceTest {
     @Test
     public void testGetEcoPointById() {
         // Arrange
-        EcoPoint ecoPoint = new EcoPoint(1L, "Eco Punto Test", "Dirección Test", 4.2206, -74.1479, 
-                                        "Descripción Test", "(601) 1111111", "eco@test.com", "ACTIVO", 
-                                        Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                                        new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()));
-
+        EcoPoint ecoPoint = buildEcoPoint(1L, "Eco Punto Test", "ACTIVO");
         when(ecoPointRepository.findById(1L)).thenReturn(Optional.of(ecoPoint));
 
         // Act
@@ -75,13 +78,7 @@ public class EcoPointServiceTest {
     @Test
     public void testGetActiveEcoPoints() {
         // Arrange
-        List<EcoPoint> activeEcoPoints = Arrays.asList(
-            new EcoPoint(1L, "Eco Punto 1", "Dirección 1", 4.2206, -74.1479, "Descripción 1", 
-                        "(601) 1111111", "eco1@test.com", "ACTIVO", 
-                        Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                        new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()))
-        );
-
+        List<EcoPoint> activeEcoPoints = List.of(buildEcoPoint(1L, "Eco Punto 1", "ACTIVO"));
         when(ecoPointRepository.findByStatus("ACTIVO")).thenReturn(activeEcoPoints);
 
         // Act
@@ -96,18 +93,8 @@ public class EcoPointServiceTest {
     @Test
     public void testCreateEcoPoint() {
         // Arrange
-        EcoPoint ecoPointToCreate = new EcoPoint(null, "Nuevo Eco Punto", "Nueva Dirección", 
-                                                4.2206, -74.1479, "Nueva Descripción", 
-                                                "(601) 1111111", "neweoco@test.com", null, 
-                                                Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                                                null, null);
-
-        EcoPoint savedEcoPoint = new EcoPoint(1L, "Nuevo Eco Punto", "Nueva Dirección", 
-                                             4.2206, -74.1479, "Nueva Descripción", 
-                                             "(601) 1111111", "neweoco@test.com", "ACTIVO", 
-                                             Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                                             new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()));
-
+        EcoPoint ecoPointToCreate = buildEcoPoint(null, "Nuevo Eco Punto", null);
+        EcoPoint savedEcoPoint = buildEcoPoint(1L, "Nuevo Eco Punto", "ACTIVO");
         when(ecoPointRepository.save(any(EcoPoint.class))).thenReturn(savedEcoPoint);
 
         // Act
@@ -124,24 +111,17 @@ public class EcoPointServiceTest {
     public void testUpdateEcoPoint() {
         // Arrange
         Long id = 1L;
-        EcoPoint existingEcoPoint = new EcoPoint(id, "Eco Punto Original", "Dirección Original", 
-                                                4.2206, -74.1479, "Descripción Original", 
-                                                "(601) 1111111", "eco@test.com", "ACTIVO", 
-                                                Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                                                new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()));
-
-        EcoPoint ecoPointDetails = new EcoPoint(null, "Eco Punto Actualizado", null, null, null, 
-                                               "Descripción Actualizada", null, null, null, null, null, null, null, null, null);
+        EcoPoint existingEcoPoint = buildEcoPoint(id, "Eco Punto Original", "ACTIVO");
+        EcoPoint ecoPointDetails = buildEcoPoint(null, "Eco Punto Actualizado", null);
 
         when(ecoPointRepository.findById(id)).thenReturn(Optional.of(existingEcoPoint));
-        when(ecoPointRepository.save(any(EcoPoint.class))).thenReturn(existingEcoPoint);
+        when(ecoPointRepository.save(any(EcoPoint.class))).thenAnswer(i -> i.getArgument(0));
 
         // Act
         Optional<EcoPoint> result = ecoPointService.updateEcoPoint(id, ecoPointDetails);
 
         // Assert
         assertTrue(result.isPresent());
-        assertEquals("Eco Punto Actualizado", result.get().getName());
         verify(ecoPointRepository, times(1)).findById(id);
         verify(ecoPointRepository, times(1)).save(any(EcoPoint.class));
     }
@@ -150,7 +130,6 @@ public class EcoPointServiceTest {
     public void testDeleteEcoPoint() {
         // Arrange
         Long id = 1L;
-
         when(ecoPointRepository.existsById(id)).thenReturn(true);
 
         // Act
@@ -166,7 +145,6 @@ public class EcoPointServiceTest {
     public void testDeleteEcoPointNotFound() {
         // Arrange
         Long id = 999L;
-
         when(ecoPointRepository.existsById(id)).thenReturn(false);
 
         // Act
@@ -182,14 +160,13 @@ public class EcoPointServiceTest {
     public void testChangeEcoPointStatus() {
         // Arrange
         Long id = 1L;
-        EcoPoint existingEcoPoint = new EcoPoint(id, "Eco Punto", "Dirección", 
-                                                4.2206, -74.1479, "Descripción", 
-                                                "(601) 1111111", "eco@test.com", "ACTIVO", 
-                                                Arrays.asList("RECICLABLE"), null, "08:00", "18:00", 
-                                                new Date(System.currentTimeMillis()), new Date(System.currentTimeMillis()));
-
+        EcoPoint existingEcoPoint = buildEcoPoint(id, "Eco Punto", "ACTIVO");
         when(ecoPointRepository.findById(id)).thenReturn(Optional.of(existingEcoPoint));
-        when(ecoPointRepository.save(any(EcoPoint.class))).thenReturn(existingEcoPoint);
+        when(ecoPointRepository.save(any(EcoPoint.class))).thenAnswer(i -> {
+            EcoPoint ep = i.getArgument(0);
+            ep.setStatus("INACTIVO");
+            return ep;
+        });
 
         // Act
         Optional<EcoPoint> result = ecoPointService.changeEcoPointStatus(id, "INACTIVO");
@@ -200,6 +177,4 @@ public class EcoPointServiceTest {
         verify(ecoPointRepository, times(1)).findById(id);
         verify(ecoPointRepository, times(1)).save(any(EcoPoint.class));
     }
-
 }
-

@@ -13,25 +13,66 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class EducationContentService {
 
     private final EducationContentRepository repository;
+    private final EducationSectionRepository sectionRepository;
     private final String UPLOAD_DIR = "uploads/education/";
 
     @Autowired
-    public EducationContentService(EducationContentRepository repository) {
+    public EducationContentService(EducationContentRepository repository,
+                                   EducationSectionRepository sectionRepository) {
         this.repository = repository;
+        this.sectionRepository = sectionRepository;
         File directory = new File(UPLOAD_DIR);
         if (!directory.exists()) {
             directory.mkdirs();
         }
     }
 
-    // ── HU21 mejorada: guardar contenido con MÚLTIPLES archivos ──
+    // ──────────────────────────── MAPPERS ────────────────────────────
+
+    private EducationFileDTO toFileDTO(EducationFile f) {
+        return EducationFileDTO.builder()
+                .fileUrl(f.getFileUrl())
+                .fileType(f.getFileType())
+                .build();
+    }
+
+    private EducationSectionResponseDTO toSectionDTO(EducationSection s) {
+        List<EducationFileDTO> files = s.getFiles() == null ? List.of() :
+                s.getFiles().stream().map(this::toFileDTO).collect(Collectors.toList());
+        return EducationSectionResponseDTO.builder()
+                .id(s.getId())
+                .title(s.getTitle())
+                .description(s.getDescription())
+                .files(files)
+                .build();
+    }
+
+    public EducationContentResponseDTO toContentDTO(EducationContent c) {
+        List<EducationFileDTO> files = c.getFiles() == null ? List.of() :
+                c.getFiles().stream().map(this::toFileDTO).collect(Collectors.toList());
+        List<EducationSectionResponseDTO> sections = c.getSections() == null ? List.of() :
+                c.getSections().stream().map(this::toSectionDTO).collect(Collectors.toList());
+        return EducationContentResponseDTO.builder()
+                .id(c.getId())
+                .title(c.getTitle())
+                .description(c.getDescription())
+                .category(c.getCategory())
+                .createdAt(c.getCreatedAt())
+                .files(files)
+                .sections(sections)
+                .build();
+    }
+
+    // ──────────────────────────── HU21: guardar contenido con MÚLTIPLES archivos ────────────────────────────
+
     @Transactional
-    public EducationContent saveContent(EducationContentRequestDTO dto, MultipartFile[] files) throws IOException {
+    public EducationContentResponseDTO saveContent(EducationContentRequestDTO dto, MultipartFile[] files) throws IOException {
 
         List<EducationFile> savedFiles = new ArrayList<>();
 
@@ -43,19 +84,16 @@ public class EducationContentService {
                 throw new RuntimeException("Nombre de archivo inválido: " + originalFilename);
             }
 
-            // 1. Nombre único para evitar colisiones (timestamp + índice)
             String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
             String newFileName = System.currentTimeMillis() + "_" + savedFiles.size() + fileExtension;
             Path path = Paths.get(UPLOAD_DIR + newFileName);
             Files.write(path, file.getBytes());
 
-            // 2. Determinar tipo
             String fileType = "OTRO";
             if (fileExtension.equalsIgnoreCase(".pdf")) fileType = "PDF";
             else if (fileExtension.matches("(?i)\\.(jpg|png|jpeg|webp)")) fileType = "IMAGE";
             else if (fileExtension.matches("(?i)\\.(mp4|avi|mkv)")) fileType = "VIDEO";
 
-            // 3. Agregar a la lista
             savedFiles.add(EducationFile.builder()
                     .fileUrl("/" + path.toString().replace("\\", "/"))
                     .fileType(fileType)
@@ -73,20 +111,95 @@ public class EducationContentService {
                 .files(savedFiles)
                 .build();
 
-        return repository.save(content);
+        return toContentDTO(repository.save(content));
     }
 
-    public List<EducationContent> getAllContents() {
-        return repository.findAll();
+    public List<EducationContentResponseDTO> getAllContents() {
+        return repository.findAll().stream()
+                .map(c -> {
+                    // Cargar secciones para cada contenido
+                    List<EducationSection> sections = sectionRepository.findByContentId(c.getId());
+                    c.setSections(sections);
+                    return toContentDTO(c);
+                })
+                .collect(Collectors.toList());
     }
 
-    public Optional<EducationContent> getContentById(Long id) {
-        return repository.findById(id);
+    public Optional<EducationContentResponseDTO> getContentById(Long id) {
+        return repository.findById(id).map(content -> {
+            List<EducationSection> sections = sectionRepository.findByContentId(id);
+            content.setSections(sections);
+            return toContentDTO(content);
+        });
     }
 
-    // ── NUEVO: editar solo metadata (no toca archivos) ──
+    public List<EducationSectionResponseDTO> getSectionsByContent(Long contentId) {
+        return sectionRepository.findByContentId(contentId).stream()
+                .map(this::toSectionDTO)
+                .collect(Collectors.toList());
+    }
+
     @Transactional
-    public EducationContent updateContent(Long id, EducationContentRequestDTO dto) {
+    public EducationSectionResponseDTO addSection(Long contentId, EducationSectionRequestDTO dto, MultipartFile[] files) throws IOException {
+        EducationContent content = repository.findById(contentId)
+                .orElseThrow(() -> new RuntimeException("Contenido no encontrado con id: " + contentId));
+
+        List<EducationFile> savedFiles = new ArrayList<>();
+        if (files != null) {
+            for (MultipartFile file : files) {
+                if (file == null || file.isEmpty()) continue;
+                String originalFilename = file.getOriginalFilename();
+                if (originalFilename == null || !originalFilename.contains(".")) continue;
+                String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
+                String newFileName = System.currentTimeMillis() + "_sec_" + savedFiles.size() + fileExtension;
+                Path path = Paths.get(UPLOAD_DIR + newFileName);
+                Files.write(path, file.getBytes());
+                String fileType = "OTRO";
+                if (fileExtension.equalsIgnoreCase(".pdf")) fileType = "PDF";
+                else if (fileExtension.matches("(?i)\\.(jpg|png|jpeg|webp)")) fileType = "IMAGE";
+                savedFiles.add(EducationFile.builder()
+                        .fileUrl("/" + path.toString().replace("\\", "/"))
+                        .fileType(fileType)
+                        .build());
+            }
+        }
+
+        EducationSection section = EducationSection.builder()
+                .title(dto.getTitle())
+                .description(dto.getDescription())
+                .content(content)
+                .files(savedFiles)
+                .build();
+
+        EducationSection saved = sectionRepository.save(section);
+        content.getSections().add(saved);
+        repository.save(content);
+        return toSectionDTO(saved);
+    }
+
+    @Transactional
+    public EducationSectionResponseDTO updateSection(Long sectionId, EducationSectionRequestDTO dto) {
+        EducationSection section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Sección no encontrada con id: " + sectionId));
+        section.setTitle(dto.getTitle());
+        section.setDescription(dto.getDescription());
+        return toSectionDTO(sectionRepository.save(section));
+    }
+
+    @Transactional
+    public void deleteSection(Long sectionId) {
+        EducationSection section = sectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Sección no encontrada con id: " + sectionId));
+        EducationContent content = section.getContent();
+        if (content != null) {
+            content.getSections().removeIf(s -> s.getId().equals(sectionId));
+            repository.save(content);
+        }
+        sectionRepository.deleteById(sectionId);
+    }
+
+    @Transactional
+    public EducationContentResponseDTO updateContent(Long id, EducationContentRequestDTO dto) {
         EducationContent content = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Contenido no encontrado con id: " + id));
 
@@ -94,7 +207,10 @@ public class EducationContentService {
         content.setDescription(dto.getDescription());
         content.setCategory(dto.getCategory());
 
-        return repository.save(content);
+        EducationContent saved = repository.save(content);
+        List<EducationSection> sections = sectionRepository.findByContentId(saved.getId());
+        saved.setSections(sections);
+        return toContentDTO(saved);
     }
 
     public void deleteContent(Long id) {
@@ -104,3 +220,4 @@ public class EducationContentService {
         repository.deleteById(id);
     }
 }
+
