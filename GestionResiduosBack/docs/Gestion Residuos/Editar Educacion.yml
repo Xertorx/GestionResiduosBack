@@ -1,0 +1,25 @@
+info:
+  name: Editar Educacion
+  type: http
+  seq: 14
+
+http:
+  method: PUT
+  url: http://localhost:8080/api/v1/education/1
+  body:
+    type: json
+    data: |-
+      {
+        "title": "Título EDITADO desde Bruno",
+        "description": "Descripción actualizada",
+        "category": "compostaje"
+      }
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnZXN0aW9ucmVzaWR1b3MuY29tIiwiaWF0IjoxNzc2ODM3OTMyLCJleHAiOjE3NzY4NDUxMzJ9.yCXFrJiJEpClHmzc_xYTikUl9xUS8qIIlE-n8LOTpfk
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
