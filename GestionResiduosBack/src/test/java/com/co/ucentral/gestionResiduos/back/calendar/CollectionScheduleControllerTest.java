@@ -1,9 +1,14 @@
 package com.co.ucentral.gestionResiduos.back.calendar;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -18,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(CollectionScheduleController.class)
+@Import(TestSecurityConfig.class)
 class CollectionScheduleControllerTest {
 
     @Autowired
@@ -25,6 +31,12 @@ class CollectionScheduleControllerTest {
 
     @MockitoBean
     private CollectionScheduleService scheduleService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Autowired
     private ObjectMapper objectMapper;

@@ -1,0 +1,10 @@
+<!DOCTYPE aspectj PUBLIC "-//AspectJ//DTD//EN" "http://www.eclipse.org/aspectj/dtd/aspectj.dtd">
+<aspectj>
+    <weaver options="-Xlint:ignore -nowarn">
+        <exclude within="oracle..*"/>
+        <exclude within="com.mchange..*"/>
+        <exclude within="com.zaxxer..*"/>
+        <exclude within="org.postgresql..*"/>
+    </weaver>
+</aspectj>
+

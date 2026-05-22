@@ -1,10 +1,15 @@
 package com.co.ucentral.gestionResiduos.back.quiz;
 
 import com.co.ucentral.gestionResiduos.back.quiz.dto.*;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -17,10 +22,12 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(QuizController.class)
+@Import(TestSecurityConfig.class)
 class QuizControllerTest {
 
     @Autowired
@@ -28,6 +35,12 @@ class QuizControllerTest {
 
     @MockitoBean
     private QuizService quizService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -176,12 +189,12 @@ class QuizControllerTest {
     // ── POST /api/v1/quizzes/{quizId}/attempt ────────────────────────
 
     @Test
-    @WithMockUser(username = "user@test.com")
     void submitAttempt_autenticado_retorna200() throws Exception {
         SubmitAttemptDTO dto = new SubmitAttemptDTO();
-        when(quizService.submitAttempt(eq(1L), eq("user@test.com"), any())).thenReturn(buildResult());
+        when(quizService.submitAttempt(eq(1L), anyString(), any())).thenReturn(buildResult());
 
         mockMvc.perform(post("/api/v1/quizzes/1/attempt")
+                        .with(user("user@test.com"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto))
                         .with(csrf()))
@@ -202,11 +215,11 @@ class QuizControllerTest {
     // ── GET /api/v1/quizzes/me/stats ─────────────────────────────────
 
     @Test
-    @WithMockUser(username = "user@test.com")
     void getMyStats_autenticado_retorna200() throws Exception {
-        when(quizService.getUserStats("user@test.com")).thenReturn(Map.of("totalPoints", 130));
+        when(quizService.getUserStats(anyString())).thenReturn(Map.of("totalPoints", 130));
 
-        mockMvc.perform(get("/api/v1/quizzes/me/stats"))
+        mockMvc.perform(get("/api/v1/quizzes/me/stats")
+                        .with(user("user@test.com")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalPoints").value(130));
     }

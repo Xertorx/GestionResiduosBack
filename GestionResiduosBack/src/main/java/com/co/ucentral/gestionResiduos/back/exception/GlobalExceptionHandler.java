@@ -6,12 +6,16 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -127,10 +131,24 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
     }
 
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingPart(MissingServletRequestPartException ex) {
+        String message = "Falta el archivo o parte requerida: " + ex.getRequestPartName();
+        logger.warn(message);
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad Request", message);
+    }
+
     // ========== Excepciones de acceso ==========
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean isAnonymous = auth == null || !auth.isAuthenticated()
+                || auth instanceof AnonymousAuthenticationToken;
+        if (isAnonymous) {
+            logger.warn("Acceso no autenticado: {}", ex.getMessage());
+            return buildErrorResponse(HttpStatus.UNAUTHORIZED, "Unauthorized", "Autenticación requerida para acceder a este recurso");
+        }
         logger.warn("Acceso denegado: {}", ex.getMessage());
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", "No tienes permisos para acceder a este recurso");
     }

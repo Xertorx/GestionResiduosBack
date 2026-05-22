@@ -6,9 +6,14 @@ import com.co.ucentral.gestionResiduos.back.Geography.City.CityService;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodController;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodService;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -19,6 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest({NeighborhoodController.class, CityController.class})
+@Import(TestSecurityConfig.class)
 class GeographyControllerTest {
 
     @Autowired
@@ -29,6 +35,12 @@ class GeographyControllerTest {
 
     @MockitoBean
     private CityService cityService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     // ── GET /api/geography/cities ─────────────────────────────────────
 

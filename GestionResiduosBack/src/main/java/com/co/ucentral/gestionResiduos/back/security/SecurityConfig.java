@@ -84,6 +84,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
 
+                        // ── Progreso educativo (ciudadano autenticado) - ANTES de la regla pública ──
+                        .requestMatchers(HttpMethod.GET, "/api/v1/education/*/progress").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/sections/*/complete").authenticated()
+
                         // Contenidos educativos - SIN JWT (público)
                         // Permitir GET públicos para listar/ver contenidos sin requerir JWT
                         .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()

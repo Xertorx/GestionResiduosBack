@@ -31,6 +31,14 @@ public class EcoPointServiceTest {
         ecoPointService = new EcoPointService(ecoPointRepository, neighborhoodRepository);
     }
 
+    private com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood buildNeighborhood(int id) {
+        com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood n =
+                new com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood();
+        n.neighborhoodId = id;
+        n.setName("Barrio Test");
+        return n;
+    }
+
     private EcoPoint buildEcoPoint(Long id, String name, String status) {
         EcoPoint ep = new EcoPoint();
         ep.setId(id);
@@ -39,6 +47,7 @@ public class EcoPointServiceTest {
         ep.setLatitude(4.2206);
         ep.setLongitude(-74.1479);
         ep.setStatus(status);
+        ep.setNeighborhood(buildNeighborhood(1));
         return ep;
     }
 
@@ -95,6 +104,7 @@ public class EcoPointServiceTest {
         // Arrange
         EcoPoint ecoPointToCreate = buildEcoPoint(null, "Nuevo Eco Punto", null);
         EcoPoint savedEcoPoint = buildEcoPoint(1L, "Nuevo Eco Punto", "ACTIVO");
+        when(neighborhoodRepository.findById(1)).thenReturn(Optional.of(buildNeighborhood(1)));
         when(ecoPointRepository.save(any(EcoPoint.class))).thenReturn(savedEcoPoint);
 
         // Act
@@ -114,6 +124,7 @@ public class EcoPointServiceTest {
         EcoPoint existingEcoPoint = buildEcoPoint(id, "Eco Punto Original", "ACTIVO");
         EcoPoint ecoPointDetails = buildEcoPoint(null, "Eco Punto Actualizado", null);
 
+        when(neighborhoodRepository.findById(1)).thenReturn(Optional.of(buildNeighborhood(1)));
         when(ecoPointRepository.findById(id)).thenReturn(Optional.of(existingEcoPoint));
         when(ecoPointRepository.save(any(EcoPoint.class))).thenAnswer(i -> i.getArgument(0));
 

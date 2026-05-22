@@ -84,6 +84,7 @@ public class QuizController {
 
     // ── USUARIO: Enviar respuestas y obtener resultado + puntos ──
     @PostMapping("/{quizId}/attempt")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> submit(@PathVariable Long quizId,
                                     @RequestBody SubmitAttemptDTO dto,
                                     Authentication authentication) {

@@ -87,11 +87,14 @@ public class EducationContentController {
     }
 
     // ── Actualizar sección (admin) ──
-    @PutMapping("/sections/{sectionId}")
+    @PutMapping(value = "/sections/{sectionId}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<?> updateSection(@PathVariable Long sectionId, @RequestBody EducationSectionRequestDTO dto) {
+    public ResponseEntity<?> updateSection(
+            @PathVariable Long sectionId,
+            @ModelAttribute EducationSectionRequestDTO dto,
+            @RequestParam(value = "files", required = false) MultipartFile[] files) {
         try {
-            return ResponseEntity.ok(service.updateSection(sectionId, dto));
+            return ResponseEntity.ok(service.updateSection(sectionId, dto, files));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
@@ -115,12 +118,15 @@ public class EducationContentController {
         }
     }
 
-    // ── Editar metadata (título, descripción, categoría) ──
-    @PutMapping("/{id}")
+    // ── Editar metadata (título, descripción, categoría) + archivos opcionales ──
+    @PutMapping(value = "/{id}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE, MediaType.APPLICATION_JSON_VALUE})
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<?> updateContent(@PathVariable Long id, @RequestBody EducationContentRequestDTO dto) {
+    public ResponseEntity<?> updateContent(
+            @PathVariable Long id,
+            @ModelAttribute EducationContentRequestDTO dto,
+            @RequestParam(value = "files", required = false) MultipartFile[] files) {
         try {
-            return ResponseEntity.ok(service.updateContent(id, dto));
+            return ResponseEntity.ok(service.updateContent(id, dto, files));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
