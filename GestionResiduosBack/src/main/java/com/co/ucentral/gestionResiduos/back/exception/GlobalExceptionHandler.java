@@ -54,6 +54,12 @@ public class GlobalExceptionHandler {
         return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage());
     }
 
+    @ExceptionHandler(UserInactiveException.class)
+    public ResponseEntity<Map<String, Object>> handleUserInactive(UserInactiveException ex) {
+        logger.warn("Usuario desactivado: {}", ex.getMessage());
+        return buildErrorResponse(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage());
+    }
+
     // ========== Excepciones de conflicto (datos duplicados) ==========
 
     @ExceptionHandler(EmailAlreadyExistsException.class)

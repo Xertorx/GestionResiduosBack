@@ -35,6 +35,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos
@@ -42,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        // GET Geography - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/geography/**").permitAll()
 
                         // GET EcoPoints - SIN JWT (público)
                         .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()

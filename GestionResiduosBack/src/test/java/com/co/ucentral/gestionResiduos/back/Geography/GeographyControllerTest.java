@@ -73,7 +73,7 @@ class GeographyControllerTest {
         Neighborhood n = new Neighborhood();
         n.setNeighborhoodId(1);
         n.setName("Chapinero");
-        when(neighborhoodService.getNeighborhoodsByDistrict(null)).thenReturn(List.of(n));
+        when(neighborhoodService.getNeighborhoods(null, null)).thenReturn(List.of(n));
 
         mockMvc.perform(get("/api/geography/neighborhoods"))
                 .andExpect(status().isOk())
@@ -86,11 +86,24 @@ class GeographyControllerTest {
         Neighborhood n = new Neighborhood();
         n.setNeighborhoodId(2);
         n.setName("Teusaquillo");
-        when(neighborhoodService.getNeighborhoodsByDistrict(3)).thenReturn(List.of(n));
+        when(neighborhoodService.getNeighborhoods(3, null)).thenReturn(List.of(n));
 
         mockMvc.perform(get("/api/geography/neighborhoods").param("districtId", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Teusaquillo"));
+    }
+
+    @Test
+    void getNeighborhoods_conCityId_retornaBarriosDeLaCiudad() throws Exception {
+        Neighborhood n = new Neighborhood();
+        n.setNeighborhoodId(4);
+        n.setName("La Candelaria");
+        when(neighborhoodService.getNeighborhoods(null, 2)).thenReturn(List.of(n));
+
+        mockMvc.perform(get("/api/geography/neighborhoods").param("cityId", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("La Candelaria"));
     }
 
     // ── GET /api/geography/neighborhoods/{id}/location ────────────────
@@ -116,4 +129,3 @@ class GeographyControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
-

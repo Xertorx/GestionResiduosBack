@@ -14,6 +14,7 @@ import com.co.ucentral.gestionResiduos.back.exception.JwtAuthenticationException
 import com.co.ucentral.gestionResiduos.back.exception.PhoneAlreadyExistsException;
 import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
 import com.co.ucentral.gestionResiduos.back.exception.TokenInvalidoException;
+import com.co.ucentral.gestionResiduos.back.exception.UserInactiveException;
 import com.co.ucentral.gestionResiduos.back.exception.UserNotVerifiedException;
 import com.co.ucentral.gestionResiduos.back.Geography.neighborhood.NeighborhoodRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.util.UriComponentsBuilder;
 
 
 @Service
@@ -49,6 +51,9 @@ public class AuthService {
 
     @Value("${app.upload.dir.photo-profile:uploads/photo_profile}")
     private String photoProfileDir;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -168,7 +173,7 @@ public class AuthService {
         logger.info("Token de confirmación creado para usuario: {}", user.getEmail());
 
         // Enviar correo con el link de verificación
-        String link = "http://localhost:4200/register/verify?token=" + token;
+        String link = frontendLink("/register/verify", token);
         try {
             emailService.enviarConfirmacion(user.getEmail(), user.getNames(), link);
             logger.info("Correo de confirmación enviado exitosamente a: {}", user.getEmail());
@@ -193,6 +198,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Credenciales inválidas");
         }
+        validateUserIsActive(user);
 
         String accessToken = jwtService.generateToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
@@ -306,7 +312,7 @@ public class AuthService {
         logger.info("Nuevo token de verificación creado para: {}", email);
 
         // Enviar correo con el nuevo link
-        String link = "http://localhost:4200/register/verify?token=" + newToken;
+        String link = frontendLink("/register/verify", newToken);
         try {
             emailService.enviarConfirmacion(email, user.getNames(), link);
             logger.info("Correo de verificación reenviado a: {}", email);
@@ -381,6 +387,7 @@ public class AuthService {
         Optional<User> existing = userRepository.findByEmail(request.getEmail());
         if (existing.isPresent()) {
             User user = existing.get();
+            validateUserIsActive(user);
             if (user.getGoogleId() == null) {
                 user.setGoogleId(request.getGoogleId());
                 userRepository.save(user);
@@ -438,6 +445,7 @@ public class AuthService {
         if (user.getGoogleId() == null || !user.getGoogleId().equals(googleId)) {
             throw new InvalidCredentialsException("Credenciales inválidas");
         }
+        validateUserIsActive(user);
 
         String accessToken = jwtService.generateToken(user.getEmail());
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
@@ -448,6 +456,13 @@ public class AuthService {
                 user.getPhoto(), user.getRole().getName()
         );
     }
+
+    private void validateUserIsActive(User user) {
+        if ("INACTIVO".equalsIgnoreCase(user.getStatus())) {
+            throw new UserInactiveException("La cuenta se encuentra desactivada. Contacta al administrador.");
+        }
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public RegisterResponse requestPasswordReset(String email) {
         logger.info("Solicitud de recuperación de contraseña para: {}", email);
@@ -468,7 +483,7 @@ public class AuthService {
         tokenRepository.save(ts);
 
         // Enviar correo con el link
-        String link = "http://localhost:4200/reset-password?token=" + newToken;
+        String link = frontendLink("/reset-password", newToken);
         try {
             emailService.enviarRecuperacion(email, user.getNames(), link); // ← ahora pasa el nombre
             logger.info("Correo de recuperación enviado a: {}", email);
@@ -482,6 +497,16 @@ public class AuthService {
                 email,
                 "PENDIENTE"
         );
+    }
+
+    private String frontendLink(String path, String token) {
+        String baseUrl = frontendUrl.replaceAll("/+$", "");
+        return UriComponentsBuilder.fromUriString(baseUrl)
+                .path(path)
+                .queryParam("token", token)
+                .build()
+                .encode()
+                .toUriString();
     }
 
     @Transactional
