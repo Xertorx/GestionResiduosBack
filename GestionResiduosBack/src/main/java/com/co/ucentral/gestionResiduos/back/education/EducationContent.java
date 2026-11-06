@@ -39,6 +39,10 @@ public class EducationContent {
     @Builder.Default
     private List<EducationFile> files = new ArrayList<>();
 
+    // ── Secciones del contenido (opcional) ──
+    @OneToMany(mappedBy = "content", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<EducationSection> sections = new ArrayList<>();
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

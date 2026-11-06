@@ -30,5 +30,7 @@ public class UserProfileResponse {
     private String roleName;
     private boolean canUpdate;
     private String nextUpdateAvailable;
-}
 
+    /** ── HU22: puntos acumulados por respuestas correctas ── */
+    private Integer points;
+}

@@ -6,7 +6,9 @@ info:
 http:
   method: GET
   url: http://localhost:8080/api/reports
-  auth: inherit
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnYXJjaWFkaWVnbzk2QGhvdG1haWwuY29tIiwiaWF0IjoxNzc2ODM0MDI0LCJleHAiOjE3NzY4NDEyMjR9.zYqX0oMpJ2OTHbgdCS7-TFqbakTYv_9B6C4UyasGd9E
 
 settings:
   encodeUrl: true

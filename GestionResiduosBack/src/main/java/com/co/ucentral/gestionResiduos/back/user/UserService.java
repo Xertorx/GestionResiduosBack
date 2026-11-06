@@ -143,6 +143,7 @@ public class UserService {
                 .roleName(user.getRole() != null ? user.getRole().getName() : null)
                 .canUpdate(canUpdate)
                 .nextUpdateAvailable(nextUpdate)
+                .points(user.getPoints() == null ? 0 : user.getPoints())
                 .build();
     }
 

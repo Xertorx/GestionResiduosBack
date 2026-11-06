@@ -6,9 +6,11 @@ info:
 http:
   method: GET
   url: http://localhost:8080/api/v1/education
+  body:
+    type: multipart-form
   auth:
     type: bearer
-    token: ""
+    token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnZXN0aW9ucmVzaWR1b3MuY29tIiwiaWF0IjoxNzc2ODM2NTY5LCJleHAiOjE3NzY4NDM3Njl9.e3uL7SKaCk4XPr8b7cbZuLtbxR8p4Q9c-rxHyYc3bpg
 
 settings:
   encodeUrl: true

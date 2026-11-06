@@ -35,6 +35,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos
@@ -42,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        // GET Geography - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/geography/**").permitAll()
 
                         // GET EcoPoints - SIN JWT (público)
                         .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()
@@ -84,6 +87,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
 
+                        // ── Progreso educativo (ciudadano autenticado) - ANTES de la regla pública ──
+                        .requestMatchers(HttpMethod.GET, "/api/v1/education/*/progress").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/sections/*/complete").authenticated()
+
                         // Contenidos educativos - SIN JWT (público)
                         // Permitir GET públicos para listar/ver contenidos sin requerir JWT
                         .requestMatchers(HttpMethod.GET, "/api/v1/education/**").permitAll()
@@ -96,7 +104,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/education/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/education/**").hasRole("ADMINISTRADOR")
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/education/**").hasRole("ADMINISTRADOR")
+                        // ── HU22: Quizzes interactivos ──
+                        // GET público (jugar quiz, verificar existencia)
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*/exists").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*").permitAll()
+                        // GET admin (ver respuestas correctas) → solo ADMINISTRADOR
+                        .requestMatchers(HttpMethod.GET, "/api/v1/quizzes/content/*/admin").hasRole("ADMINISTRADOR")
+                        // POST attempt → cualquier usuario autenticado
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/*/attempt").authenticated()
+                        // POST/PUT/DELETE quizzes → solo ADMINISTRADOR
+                        .requestMatchers(HttpMethod.POST, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/quizzes/**").hasRole("ADMINISTRADOR")
 
+                        // ── HU31: Ranking de usuarios (público) ──
+                        .requestMatchers(HttpMethod.GET, "/api/ranking/**").permitAll()
+                        // ── Logros: requiere autenticación ──
+                        .requestMatchers("/api/achievements/**").authenticated()
                         // Resto de endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )

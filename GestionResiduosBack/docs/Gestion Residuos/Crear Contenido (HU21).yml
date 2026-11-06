@@ -5,8 +5,26 @@ info:
 
 http:
   method: POST
-  url: "{{baseUrl}}/api/v1/education"
-  auth: inherit
+  url: http://localhost:8080/api/v1/education
+  body:
+    type: multipart-form
+    data:
+      - name: title
+        type: text
+        value: Guía con varias imágenes
+      - name: description
+        type: text
+        value: Prueba de múltiples archivoseba
+      - name: category
+        type: text
+        value: reciclaje
+      - name: files
+        type: file
+        value:
+          - C:\Users\garci\OneDrive\Imágenes\dd92bb5c35b24ccabab0b6446ee46002.jpg
+  auth:
+    type: bearer
+    token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbkBnZXN0aW9ucmVzaWR1b3MuY29tIiwiaWF0IjoxNzc2ODM3NTM4LCJleHAiOjE3NzY4NDQ3Mzh9.b66KbYTst_90bKDpzuUh3zLvvXMJv2yqHbh8saYxFEQ
 
 settings:
   encodeUrl: true

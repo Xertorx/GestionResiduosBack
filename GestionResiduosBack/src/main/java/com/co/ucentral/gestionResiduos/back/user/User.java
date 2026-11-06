@@ -13,7 +13,7 @@ import com.co.ucentral.gestionResiduos.back.role.Role;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
- @Table(name = "users")
+@Table(name = "users")
 public class User {
 
     @Id
@@ -55,6 +55,7 @@ public class User {
     private Date updatedAt;
     @Column(name = "googleid")
     private String googleId;
-   
-}
 
+    @Column(name = "points")
+    private Integer points;
+}
