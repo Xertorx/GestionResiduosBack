@@ -278,7 +278,7 @@ class EducationContentServiceTest {
         when(sectionRepository.save(any(EducationSection.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        EducationSectionResponseDTO result = service.updateSection(5L, dto);
+        EducationSectionResponseDTO result = service.updateSection(5L, dto, null);
 
         // Assert
         assertEquals("Título Actualizado", result.getTitle());
@@ -292,7 +292,7 @@ class EducationContentServiceTest {
         EducationSectionRequestDTO dto = new EducationSectionRequestDTO();
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> service.updateSection(99L, dto));
+        assertThrows(RuntimeException.class, () -> service.updateSection(99L, dto, null));
     }
 
     // ── deleteSection ─────────────────────────────────────────────────
@@ -340,7 +340,7 @@ class EducationContentServiceTest {
         when(sectionRepository.findByContentId(1L)).thenReturn(new ArrayList<>());
 
         // Act
-        EducationContentResponseDTO result = service.updateContent(1L, dto);
+        EducationContentResponseDTO result = service.updateContent(1L, dto, null);
 
         // Assert
         assertEquals("Título Nuevo", result.getTitle());
@@ -355,7 +355,7 @@ class EducationContentServiceTest {
         EducationContentRequestDTO dto = new EducationContentRequestDTO();
 
         // Act & Assert
-        assertThrows(RuntimeException.class, () -> service.updateContent(99L, dto));
+        assertThrows(RuntimeException.class, () -> service.updateContent(99L, dto, null));
     }
 
     // ── deleteContent ─────────────────────────────────────────────────
@@ -382,4 +382,3 @@ class EducationContentServiceTest {
         verify(repository, never()).deleteById(any());
     }
 }
-
