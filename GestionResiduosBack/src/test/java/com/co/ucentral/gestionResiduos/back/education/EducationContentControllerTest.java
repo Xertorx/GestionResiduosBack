@@ -241,7 +241,8 @@ class EducationContentControllerTest {
         // Arrange
         EducationSectionResponseDTO updated = EducationSectionResponseDTO.builder()
                 .id(5L).title("Título Actualizado").description("Nueva desc").files(List.of()).build();
-        when(service.updateSection(anyLong(), any())).thenReturn(updated);
+        when(service.updateSection(anyLong(), any(),
+                nullable(org.springframework.web.multipart.MultipartFile[].class))).thenReturn(updated);
 
         EducationSectionRequestDTO body = new EducationSectionRequestDTO();
         body.setTitle("Título Actualizado");
@@ -260,7 +261,8 @@ class EducationContentControllerTest {
     @WithMockUser(roles = "ADMINISTRADOR")
     void updateSection_noExistente_retorna404() throws Exception {
         // Arrange
-        when(service.updateSection(anyLong(), any()))
+        when(service.updateSection(anyLong(), any(),
+                nullable(org.springframework.web.multipart.MultipartFile[].class)))
                 .thenThrow(new RuntimeException("Sección no encontrada con id: 99"));
 
         EducationSectionRequestDTO body = new EducationSectionRequestDTO();
@@ -309,7 +311,8 @@ class EducationContentControllerTest {
     void updateContent_existente_retorna200() throws Exception {
         // Arrange
         EducationContentResponseDTO updated = buildContentDTO(1L);
-        when(service.updateContent(anyLong(), any())).thenReturn(updated);
+        when(service.updateContent(anyLong(), any(),
+                nullable(org.springframework.web.multipart.MultipartFile[].class))).thenReturn(updated);
 
         EducationContentRequestDTO body = new EducationContentRequestDTO();
         body.setTitle("Reciclaje Básico");
@@ -330,7 +333,8 @@ class EducationContentControllerTest {
     @WithMockUser(roles = "ADMINISTRADOR")
     void updateContent_noExistente_retorna404() throws Exception {
         // Arrange
-        when(service.updateContent(anyLong(), any()))
+        when(service.updateContent(anyLong(), any(),
+                nullable(org.springframework.web.multipart.MultipartFile[].class)))
                 .thenThrow(new RuntimeException("Contenido no encontrado con id: 99"));
 
         EducationContentRequestDTO body = new EducationContentRequestDTO();
