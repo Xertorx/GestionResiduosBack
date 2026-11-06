@@ -1,10 +1,15 @@
 package com.co.ucentral.gestionResiduos.back.notification;
 
 import com.co.ucentral.gestionResiduos.back.notification.dto.*;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -16,10 +21,12 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(NotificationController.class)
+@Import(TestSecurityConfig.class)
 class NotificationControllerTest {
 
     @Autowired
@@ -27,6 +34,12 @@ class NotificationControllerTest {
 
     @MockitoBean
     private NotificationService notificationService;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -60,12 +73,12 @@ class NotificationControllerTest {
     // ── PUT /api/notifications/preferences ───────────────────────────
 
     @Test
-    @WithMockUser(username = "user@test.com")
     void updatePreferences_autenticado_retorna200() throws Exception {
         NotificationPreferenceDTO pref = new NotificationPreferenceDTO();
-        when(notificationService.updatePreferences(eq("user@test.com"), any())).thenReturn(pref);
+        when(notificationService.updatePreferences(anyString(), any())).thenReturn(pref);
 
         mockMvc.perform(put("/api/notifications/preferences")
+                        .with(user("user@test.com"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pref))
                         .with(csrf()))
@@ -133,6 +146,10 @@ class NotificationControllerTest {
     @WithMockUser(roles = "ADMINISTRADOR")
     void createCampaign_admin_retorna201() throws Exception {
         CampaignCreateDTO dto = new CampaignCreateDTO();
+        dto.setTitle("Campaña test");
+        dto.setMessage("Recicla más");
+        dto.setStartDate(Date.valueOf("2026-01-01"));
+        dto.setEndDate(Date.valueOf("2026-12-31"));
         when(notificationService.createCampaign(any())).thenReturn(buildCampaign(10L));
 
         mockMvc.perform(post("/api/notifications/campaigns")
@@ -149,6 +166,10 @@ class NotificationControllerTest {
     @WithMockUser(roles = "ADMINISTRADOR")
     void updateCampaign_admin_retorna200() throws Exception {
         CampaignCreateDTO dto = new CampaignCreateDTO();
+        dto.setTitle("Campaña actualizada");
+        dto.setMessage("Mensaje actualizado");
+        dto.setStartDate(Date.valueOf("2026-01-01"));
+        dto.setEndDate(Date.valueOf("2026-12-31"));
         when(notificationService.updateCampaign(eq(1L), any())).thenReturn(buildCampaign(1L));
 
         mockMvc.perform(put("/api/notifications/campaigns/1")

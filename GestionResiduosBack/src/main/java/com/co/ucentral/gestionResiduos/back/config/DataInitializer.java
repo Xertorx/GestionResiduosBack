@@ -110,7 +110,12 @@ public class DataInitializer implements CommandLineRunner {
 
             Neighborhood neighborhood = neighborhoodRepository.findAll(PageRequest.of(0, 1))
                     .stream().findFirst()
-                    .orElseThrow(() -> new RuntimeException("No se encontró ningún barrio en la base de datos. Debe existir al menos un barrio para crear el usuario admin."));
+                    .orElse(null);
+
+            if (neighborhood == null) {
+                logger.warn("No se encontró ningún barrio en la base de datos. El usuario admin no será creado en este arranque.");
+                return;
+            }
 
             User admin = new User();
             admin.setDocumentNumber(999999999);

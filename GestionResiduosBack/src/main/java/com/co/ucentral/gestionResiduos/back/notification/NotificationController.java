@@ -24,6 +24,7 @@ public class NotificationController {
      * GET /api/notifications/preferences - Obtener mis preferencias
      */
     @GetMapping("/preferences")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<NotificationPreferenceDTO> getPreferences(Authentication auth) {
         return ResponseEntity.ok(notificationService.getPreferences(auth.getName()));
     }

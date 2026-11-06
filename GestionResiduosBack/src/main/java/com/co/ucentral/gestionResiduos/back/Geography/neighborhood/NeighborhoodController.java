@@ -19,8 +19,10 @@ public class NeighborhoodController {
     private final NeighborhoodService neighborhoodService;
 
     @GetMapping("/neighborhoods")
-    public java.util.List<Neighborhood> getNeighborhoods(@org.springframework.web.bind.annotation.RequestParam(required = false) Integer districtId) {
-        return neighborhoodService.getNeighborhoodsByDistrict(districtId);
+    public java.util.List<Neighborhood> getNeighborhoods(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer districtId,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer cityId) {
+        return neighborhoodService.getNeighborhoods(districtId, cityId);
     }
 
     @GetMapping("/neighborhoods/{id}/location")

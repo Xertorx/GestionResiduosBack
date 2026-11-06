@@ -1,10 +1,15 @@
 package com.co.ucentral.gestionResiduos.back.ecoPoint;
 
 import com.co.ucentral.gestionResiduos.back.exception.ResourceNotFoundException;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -20,6 +25,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(EcoPointController.class)
+@Import(TestSecurityConfig.class)
 class EcoPointControllerTest {
 
     @Autowired
@@ -28,10 +34,21 @@ class EcoPointControllerTest {
     @MockitoBean
     private EcoPointService ecoPointService;
 
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
+
     @Autowired
     private ObjectMapper objectMapper;
 
     private EcoPoint buildEcoPoint(Long id) {
+        com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood n =
+                new com.co.ucentral.gestionResiduos.back.Geography.neighborhood.Neighborhood();
+        n.neighborhoodId = 1;
+        n.setName("Barrio Test");
+
         EcoPoint ep = new EcoPoint();
         ep.setId(id);
         ep.setName("EcoPunto Test");
@@ -39,6 +56,7 @@ class EcoPointControllerTest {
         ep.setLatitude(4.6097);
         ep.setLongitude(-74.0817);
         ep.setStatus("ACTIVO");
+        ep.setNeighborhood(n);
         return ep;
     }
 

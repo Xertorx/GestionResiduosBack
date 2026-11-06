@@ -38,3 +38,6 @@ build/
 ### Logs ###
 logs/
 
+### AspectJ dump files ###
+ajcore.*.txt
+

@@ -1,9 +1,14 @@
 package com.co.ucentral.gestionResiduos.back.education;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.co.ucentral.gestionResiduos.back.security.JwtService;
+import com.co.ucentral.gestionResiduos.back.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import com.co.ucentral.gestionResiduos.back.config.TestSecurityConfig;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.mock.web.MockMultipartFile;
@@ -23,6 +28,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(EducationContentController.class)
+@Import(TestSecurityConfig.class)
 class EducationContentControllerTest {
 
     @Autowired
@@ -30,6 +36,12 @@ class EducationContentControllerTest {
 
     @MockitoBean
     private EducationContentService service;
+
+    @MockitoBean
+    private JwtService jwtService;
+
+    @MockitoBean
+    private UserRepository userRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -71,16 +83,13 @@ class EducationContentControllerTest {
 
         MockMultipartFile file = new MockMultipartFile(
                 "files", "foto.jpg", "image/jpeg", "data".getBytes());
-        MockMultipartFile title = new MockMultipartFile(
-                "title", "", "text/plain", "Reciclaje Básico".getBytes());
-        MockMultipartFile description = new MockMultipartFile(
-                "description", "", "text/plain", "Guía de reciclaje".getBytes());
-        MockMultipartFile category = new MockMultipartFile(
-                "category", "", "text/plain", "reciclaje".getBytes());
 
         // Act & Assert
         mockMvc.perform(multipart("/api/v1/education")
-                        .file(file).file(title).file(description).file(category)
+                        .file(file)
+                        .param("title", "Reciclaje Básico")
+                        .param("description", "Guía de reciclaje")
+                        .param("category", "reciclaje")
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1))
@@ -200,14 +209,10 @@ class EducationContentControllerTest {
         EducationSectionResponseDTO saved = buildSectionDTO(10L);
         when(service.addSection(anyLong(), any(), any())).thenReturn(saved);
 
-        MockMultipartFile title = new MockMultipartFile(
-                "title", "", "text/plain", "Sección 1".getBytes());
-        MockMultipartFile description = new MockMultipartFile(
-                "description", "", "text/plain", "Descripción".getBytes());
-
         // Act & Assert
         mockMvc.perform(multipart("/api/v1/education/1/sections")
-                        .file(title).file(description)
+                        .param("title", "Sección 1")
+                        .param("description", "Descripción")
                         .with(csrf()))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(10))
@@ -221,12 +226,9 @@ class EducationContentControllerTest {
         when(service.addSection(anyLong(), any(), any()))
                 .thenThrow(new RuntimeException("Contenido no encontrado con id: 99"));
 
-        MockMultipartFile title = new MockMultipartFile(
-                "title", "", "text/plain", "Sección".getBytes());
-
         // Act & Assert
         mockMvc.perform(multipart("/api/v1/education/99/sections")
-                        .file(title).with(csrf()))
+                        .param("title", "Sección").with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.error").exists());
     }
@@ -370,6 +372,3 @@ class EducationContentControllerTest {
                 .andExpect(jsonPath("$.error").exists());
     }
 }
-
-
-

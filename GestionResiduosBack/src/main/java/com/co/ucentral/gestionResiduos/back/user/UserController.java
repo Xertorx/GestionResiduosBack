@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,6 +28,7 @@ public class UserController {
      * GET /api/users/admin/list - Listar usuarios resumido (solo admin)
      */
     @GetMapping("/admin/list")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<List<UserListResponse>> getAllUsersForAdmin(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(userService.getAllUsersForAdmin(email));
@@ -36,6 +38,7 @@ public class UserController {
      * GET /api/users/admin/{documentNumber} - Detalle de un usuario (solo admin)
      */
     @GetMapping("/admin/{documentNumber}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UserProfileResponse> getUserDetail(
             Authentication authentication,
             @PathVariable int documentNumber) {
@@ -47,6 +50,7 @@ public class UserController {
      * PATCH /api/users/admin/{documentNumber}/status - Cambiar estado de usuario (solo admin)
      */
     @PatchMapping("/admin/{documentNumber}/status")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<UserProfileResponse> updateUserStatus(
             Authentication authentication,
             @PathVariable int documentNumber,
@@ -61,6 +65,7 @@ public class UserController {
      * GET /api/users/profile - Obtener perfil del usuario autenticado
      */
     @GetMapping("/profile")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserProfileResponse> getProfile(Authentication authentication) {
         String email = authentication.getName();
         return ResponseEntity.ok(userService.getProfile(email));

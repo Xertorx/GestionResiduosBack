@@ -35,6 +35,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
         http
+                .cors(cors -> {})
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Endpoints públicos
@@ -42,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        // GET Geography - SIN JWT (público)
+                        .requestMatchers(HttpMethod.GET, "/api/geography/**").permitAll()
 
                         // GET EcoPoints - SIN JWT (público)
                         .requestMatchers(HttpMethod.GET, "/api/ecopoints/**").permitAll()
@@ -83,6 +86,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/active").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/notifications/campaigns/{id}").permitAll()
                         .requestMatchers("/api/notifications/**").authenticated()
+
+                        // ── Progreso educativo (ciudadano autenticado) - ANTES de la regla pública ──
+                        .requestMatchers(HttpMethod.GET, "/api/v1/education/*/progress").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/complete").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/education/*/sections/*/complete").authenticated()
 
                         // Contenidos educativos - SIN JWT (público)
                         // Permitir GET públicos para listar/ver contenidos sin requerir JWT
