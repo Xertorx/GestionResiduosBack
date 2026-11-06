@@ -266,7 +266,7 @@ class EducationContentServiceTest {
     // ── updateSection ─────────────────────────────────────────────────
 
     @Test
-    void updateSection_existente_actualizaYRetornaDTO() {
+    void updateSection_existente_actualizaYRetornaDTO() throws IOException {
         // Arrange
         EducationContent content = buildContent(1L);
         EducationSection section = buildSection(5L, content);
@@ -327,7 +327,7 @@ class EducationContentServiceTest {
     // ── updateContent ─────────────────────────────────────────────────
 
     @Test
-    void updateContent_existente_actualizaMetadata() {
+    void updateContent_existente_actualizaMetadata() throws IOException {
         // Arrange
         EducationContent content = buildContent(1L);
         EducationContentRequestDTO dto = new EducationContentRequestDTO();
@@ -363,7 +363,7 @@ class EducationContentServiceTest {
     @Test
     void deleteContent_existente_eliminaCorrectamente() {
         // Arrange
-        when(repository.existsById(1L)).thenReturn(true);
+        when(repository.findById(1L)).thenReturn(Optional.of(buildContent(1L)));
 
         // Act
         assertDoesNotThrow(() -> service.deleteContent(1L));
@@ -375,7 +375,7 @@ class EducationContentServiceTest {
     @Test
     void deleteContent_noExistente_lanzaExcepcion() {
         // Arrange
-        when(repository.existsById(99L)).thenReturn(false);
+        when(repository.findById(99L)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(RuntimeException.class, () -> service.deleteContent(99L));
