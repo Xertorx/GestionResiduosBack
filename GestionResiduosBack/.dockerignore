@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.git
+.idea
+.allure
+target
+logs
+uploads
+docs
+mvnw
+mvnw.cmd
+.mvn
