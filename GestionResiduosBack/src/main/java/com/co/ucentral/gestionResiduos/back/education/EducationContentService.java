@@ -98,7 +98,7 @@ public class EducationContentService {
             String fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
             String newFileName = System.currentTimeMillis() + "_" + savedFiles.size() + fileExtension;
             Path path = Paths.get(uploadDir + newFileName);
-            Files.write(path, file.getBytes());
+            file.transferTo(path);
             String fileType = "OTRO";
             if (fileExtension.equalsIgnoreCase(".pdf")) fileType = "PDF";
             else if (fileExtension.matches("(?i)\\.(jpg|png|jpeg|webp)")) fileType = "IMAGE";
@@ -333,4 +333,3 @@ public class EducationContentService {
         sectionRepository.deleteById(sectionId);
     }
 }
-
